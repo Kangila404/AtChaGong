@@ -14,7 +14,7 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserMeResponse> getMe(){
-        return ResponseEntity.ok(new UserMeResponse("서버 살아있음요."));
+        return ResponseEntity.ok(new UserMeResponse("서버 살아있음요!"));
     }
 
 
