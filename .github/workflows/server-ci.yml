@@ -1,0 +1,50 @@
+name: Server CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: 3. Grant execute permission for gradlew
+        run: chmod +x server/gradlew
+
+      - name: 4. Test
+        run: cd server && ./gradlew test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: 5. Lint (SpotBugs & PMD)
+        run: cd server && ./gradlew spotbugsMain pmdMain
+
+      - name: 6. Build Jar
+        run: cd server && ./gradlew bootJar -x test
+
+      - name: 7. Upload SpotBugs Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-report
+          path: server/build/reports/spotbugs/
+
+      - name: 8. Upload PMD Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmd-report
+          path: server/build/reports/pmd/

@@ -1,0 +1,4 @@
+name: mobile-ci.yml
+on:
+
+jobs:
