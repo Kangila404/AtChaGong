@@ -23,3 +23,5 @@ mobile/android/app/build/
 # OS
 .DS_Store
 Thumbs.db
+
+.env

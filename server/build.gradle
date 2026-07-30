@@ -22,6 +22,10 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+
+    // env 설정
+    developmentOnly 'me.paulschwarz:springboot4-dotenv:5.1.0'
 
     // 데이터베이스
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -34,6 +38,8 @@ dependencies {
 
     // 프로메테우스
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    // 로키
+    implementation 'com.github.loki4j:loki-logback-appender:2.0.3'
 }
 
 tasks.named('test') {
