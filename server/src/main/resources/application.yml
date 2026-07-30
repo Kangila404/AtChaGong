@@ -1,7 +1,10 @@
 spring:
+  application:
+    name: atchagong
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:${DB_PORT}/${DB_NAME}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
@@ -9,14 +12,12 @@ spring:
     hibernate:
       ddl-auto: update
 
-  application:
-    name: atchagong
-
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, prometheus
+        include: health,info,prometheus
+
   metrics:
     tags:
       application: atchagong
