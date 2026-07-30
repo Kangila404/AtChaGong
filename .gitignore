@@ -24,4 +24,4 @@ mobile/android/app/build/
 .DS_Store
 Thumbs.db
 
-#CI 되나
+.env
