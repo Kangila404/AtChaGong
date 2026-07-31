@@ -1,16 +1,15 @@
 spring:
+  config:
+    import: file:server/.env[.properties]
+
   application:
     name: atchagong
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3310}/${DB_NAME:atchagong}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: ${DB_USERNAME:atchagong}
-    password: ${DB_PASSWORD:atchagong}
-
-  jpa:
-    hibernate:
-      ddl-auto: update
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
 management:
   endpoints:
