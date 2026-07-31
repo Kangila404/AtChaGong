@@ -38,6 +38,7 @@ services:
       - ../server/.env
     environment:
       SPRING_PROFILES_ACTIVE: local
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE}
       DB_USERNAME: ${MYSQL_USER}
