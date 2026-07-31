@@ -1,7 +1,7 @@
 # 환경변수
-.env
+server/.env
 **/.env
-!.env.example
+!server/.env.example
 !**/.env.example
 
 # Java / Gradle
@@ -24,4 +24,4 @@ mobile/android/app/build/
 .DS_Store
 Thumbs.db
 
-.env
+server/.env

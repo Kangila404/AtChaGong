@@ -24,8 +24,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
-    // env 설정
-    developmentOnly 'me.paulschwarz:springboot4-dotenv:5.1.0'
 
     // 데이터베이스
     runtimeOnly 'com.mysql:mysql-connector-j'
