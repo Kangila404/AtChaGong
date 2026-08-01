@@ -24,6 +24,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
+    // env
+    implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 
     // 데이터베이스
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -42,6 +44,10 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.named('bootRun') {
+    workingDir = projectDir
 }
 
 spotbugs {
