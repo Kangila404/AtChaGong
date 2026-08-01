@@ -1,0 +1,24 @@
+package org.example.server.user.infrastructure.persistence.repository;
+
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.repository.UserRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+public class UserRepositoryImpl implements UserRepository {
+
+    private final UserJpaRepository userJpaRepository;
+
+    @Override
+    public Optional<User> findById(Long id) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<User> findByUserId(String userId) {
+        return Optional.empty();
+    }
+}
