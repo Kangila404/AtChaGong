@@ -1,9 +1,9 @@
 spring:
+  config:
+    import: file:server/.env[.properties]
+
   application:
     name: atchagong
-
-  profiles:
-    default: local
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
