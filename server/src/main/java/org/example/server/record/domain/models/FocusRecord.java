@@ -1,4 +1,4 @@
-package org.example.server.record.domain;
+package org.example.server.record.domain.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
