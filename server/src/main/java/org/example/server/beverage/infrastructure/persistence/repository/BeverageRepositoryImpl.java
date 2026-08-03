@@ -14,6 +14,6 @@ public class BeverageRepositoryImpl implements BeverageRepository {
 
     @Override
     public Optional<Beverage> findById(Long id) {
-        return Optional.empty();
+        return beverageJpaRepository.findById(id);
     }
 }
