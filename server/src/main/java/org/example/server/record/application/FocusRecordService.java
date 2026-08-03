@@ -5,10 +5,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
@@ -18,6 +22,8 @@ import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse.DailyRecord;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
+import org.example.server.record.presentation.dto.res.MonthlyFocusRecordResponse;
+import org.example.server.record.presentation.dto.res.MonthlyFocusRecordResponse.MonthlyDay;
 import org.example.server.timer.domain.models.TimerSetting;
 import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserStatus;
@@ -89,6 +95,54 @@ public class FocusRecordService {
         int completedCycleCount = calculateCompletedCycleCount(records.size(), cycleCount);
 
         return DailyFocusRecordResponse.of(focusedDate, records, totalFocusedSeconds, completedCycleCount);
+    }
+
+    @Transactional(readOnly = true)
+    public MonthlyFocusRecordResponse getMonthlyFocusRecords(String userId, String year, String month) {
+        User user = findUserByUserIdOrThrow(userId);
+        validateUserStatus(user);
+
+        YearMonth yearMonth = parseYearMonthOrThrow(year, month);
+        int cycleCount = findTimerSettingByUserIdOrThrow(user.getId()).getCycleCount();
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+        List<FocusRecord> focusRecords = focusRecordRepository.findByUserIdAndFocusedDateBetween(
+            user.getId(),
+            startDate,
+            endDate
+        );
+
+        Map<LocalDate, List<FocusRecord>> recordsByDate = focusRecords.stream()
+            .collect(Collectors.groupingBy(FocusRecord::getFocusedDate));
+
+        List<MonthlyDay> days = recordsByDate.entrySet().stream()
+            .map(entry -> {
+                List<FocusRecord> dailyRecords = entry.getValue();
+                int completedCycleCount = calculateCompletedCycleCount(dailyRecords.size(), cycleCount);
+                return MonthlyDay.of(
+                    entry.getKey(),
+                    sumFocusedSeconds(dailyRecords),
+                    dailyRecords.size(),
+                    completedCycleCount
+                );
+            })
+            .sorted(Comparator.comparing(MonthlyDay::date))
+            .toList();
+
+        int totalFocusedSeconds = sumFocusedSeconds(focusRecords);
+        int completedCupCount = focusRecords.size();
+        int completedCycleCount = days.stream()
+            .mapToInt(MonthlyDay::completedCycleCount)
+            .sum();
+
+        return MonthlyFocusRecordResponse.of(
+            yearMonth.getYear(),
+            yearMonth.getMonthValue(),
+            days,
+            totalFocusedSeconds,
+            completedCupCount,
+            completedCycleCount
+        );
     }
 
     // ============= 조회 메서드 모음 ============= //
@@ -192,12 +246,28 @@ public class FocusRecordService {
         }
     }
 
-    // 2. OffsetDateTime -> Asia/Seoul LocalDateTime 변환
+    // 2. 문자열 -> YearMonth 변환
+    private YearMonth parseYearMonthOrThrow(String year, String month) {
+        if (year == null || month == null || !year.matches("\\d{4}") || !month.matches("\\d+")) {
+            throw new IllegalArgumentException("년월이 올바르지 않습니다.");
+        }
+
+        int parsedYear = Integer.parseInt(year);
+        int parsedMonth = Integer.parseInt(month);
+
+        if (parsedMonth < 1 || parsedMonth > 12) {
+            throw new IllegalArgumentException("년월이 올바르지 않습니다.");
+        }
+
+        return YearMonth.of(parsedYear, parsedMonth);
+    }
+
+    // 3. OffsetDateTime -> Asia/Seoul LocalDateTime 변환
     private LocalDateTime toSeoulLocalDateTime(OffsetDateTime dateTime) {
         return dateTime.atZoneSameInstant(SEOUL_ZONE).toLocalDateTime();
     }
 
-    // 3. LocalDateTime -> Asia/Seoul OffsetDateTime 변환
+    // 4. LocalDateTime -> Asia/Seoul OffsetDateTime 변환
     private OffsetDateTime toSeoulOffsetDateTime(LocalDateTime dateTime) {
         return dateTime.atZone(SEOUL_ZONE).toOffsetDateTime();
     }

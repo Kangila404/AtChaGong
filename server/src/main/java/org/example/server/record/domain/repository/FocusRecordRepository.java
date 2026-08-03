@@ -9,6 +9,7 @@ import org.example.server.record.domain.models.FocusRecord;
 public interface FocusRecordRepository {
     Optional<FocusRecord> findByUserId(Long userId);
     List<FocusRecord> findByUserIdAndFocusedDate(Long userId, LocalDate focusedDate);
+    List<FocusRecord> findByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
     boolean existsByUserIdAndStartedAt(Long userId, LocalDateTime startedAt);
     FocusRecord save(FocusRecord focusRecord);
 }

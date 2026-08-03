@@ -7,6 +7,7 @@ import org.example.server.record.application.FocusRecordService;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
+import org.example.server.record.presentation.dto.res.MonthlyFocusRecordResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,6 +41,16 @@ public class FocusRecordController {
         @RequestParam String date
     ) {
         DailyFocusRecordResponse response = focusRecordService.getDailyFocusRecords(userId, date);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/monthly")
+    public ResponseEntity<MonthlyFocusRecordResponse> getMonthlyFocusRecords(
+        @AuthenticationPrincipal String userId,
+        @RequestParam String year,
+        @RequestParam String month
+    ) {
+        MonthlyFocusRecordResponse response = focusRecordService.getMonthlyFocusRecords(userId, year, month);
         return ResponseEntity.ok(response);
     }
 }

@@ -11,5 +11,10 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecord,Long
 
     Optional<FocusRecord> findByUserId(Long userId);
     List<FocusRecord> findByUserIdAndFocusedDateOrderByStartedAtAsc(Long userId, LocalDate focusedDate);
+    List<FocusRecord> findByUserIdAndFocusedDateBetweenOrderByFocusedDateAscStartedAtAsc(
+        Long userId,
+        LocalDate startDate,
+        LocalDate endDate
+    );
     boolean existsByUserIdAndStartedAt(Long userId, LocalDateTime startedAt);
 }
