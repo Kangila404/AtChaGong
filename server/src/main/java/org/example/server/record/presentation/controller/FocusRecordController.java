@@ -5,13 +5,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.record.application.FocusRecordService;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
+import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Record API")
@@ -29,5 +32,14 @@ public class FocusRecordController {
     ) {
         FocusRecordResponse response = focusRecordService.createFocusRecord(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/daily")
+    public ResponseEntity<DailyFocusRecordResponse> getDailyFocusRecords(
+        @AuthenticationPrincipal String userId,
+        @RequestParam String date
+    ) {
+        DailyFocusRecordResponse response = focusRecordService.getDailyFocusRecords(userId, date);
+        return ResponseEntity.ok(response);
     }
 }

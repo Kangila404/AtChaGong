@@ -6,13 +6,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
+import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
+import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse.DailyRecord;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
+import org.example.server.timer.domain.models.TimerSetting;
+import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
@@ -24,9 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
+    private final TimerSettingRepository timerSettingRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -60,6 +69,28 @@ public class FocusRecordService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public DailyFocusRecordResponse getDailyFocusRecords(String userId, String date) {
+        User user = findUserByUserIdOrThrow(userId);
+        validateUserStatus(user);
+
+        LocalDate focusedDate = parseDateOrThrow(date);
+        int cycleCount = findTimerSettingByUserIdOrThrow(user.getId()).getCycleCount();
+        List<FocusRecord> focusRecords = focusRecordRepository.findByUserIdAndFocusedDate(user.getId(), focusedDate);
+        List<DailyRecord> records = focusRecords.stream()
+            .map(focusRecord -> DailyRecord.of(
+                focusRecord,
+                toSeoulOffsetDateTime(focusRecord.getStartedAt()),
+                toSeoulOffsetDateTime(focusRecord.getCompletedAt())
+            ))
+            .toList();
+
+        int totalFocusedSeconds = sumFocusedSeconds(focusRecords);
+        int completedCycleCount = calculateCompletedCycleCount(records.size(), cycleCount);
+
+        return DailyFocusRecordResponse.of(focusedDate, records, totalFocusedSeconds, completedCycleCount);
+    }
+
     // ============= 조회 메서드 모음 ============= //
 
     // 1. (String) userId -> User 조회
@@ -75,6 +106,12 @@ public class FocusRecordService {
         }
         return beverageRepository.findById(beverageId)
             .orElseThrow(() -> new IllegalArgumentException("음료를 찾을 수 없습니다."));
+    }
+
+    // 3. (Long) userId -> TimerSetting 조회
+    private TimerSetting findTimerSettingByUserIdOrThrow(Long userId) {
+        return timerSettingRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("타이머 설정을 찾을 수 없습니다."));
     }
 
     // ============= 검증 메서드 모음 ============= //
@@ -142,13 +179,43 @@ public class FocusRecordService {
 
     // ============= 날짜 메서드 모음 ============= //
 
-    // 1. OffsetDateTime -> Asia/Seoul LocalDateTime 변환
+    // 1. 문자열 -> LocalDate 변환
+    private LocalDate parseDateOrThrow(String date) {
+        if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            throw new IllegalArgumentException("날짜가 올바르지 않습니다.");
+        }
+
+        try {
+            return LocalDate.parse(date, DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("날짜가 올바르지 않습니다.");
+        }
+    }
+
+    // 2. OffsetDateTime -> Asia/Seoul LocalDateTime 변환
     private LocalDateTime toSeoulLocalDateTime(OffsetDateTime dateTime) {
         return dateTime.atZoneSameInstant(SEOUL_ZONE).toLocalDateTime();
     }
 
-    // 2. LocalDateTime -> Asia/Seoul OffsetDateTime 변환
+    // 3. LocalDateTime -> Asia/Seoul OffsetDateTime 변환
     private OffsetDateTime toSeoulOffsetDateTime(LocalDateTime dateTime) {
         return dateTime.atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+
+    // ============= 통계 메서드 모음 ============= //
+
+    // 1. 집중 시간 합계 계산
+    private int sumFocusedSeconds(List<FocusRecord> focusRecords) {
+        return focusRecords.stream()
+            .mapToInt(FocusRecord::getFocusedSeconds)
+            .sum();
+    }
+
+    // 2. 완료 사이클 수 계산
+    private int calculateCompletedCycleCount(int completedCupCount, int cycleCount) {
+        if (cycleCount < 1) {
+            throw new IllegalArgumentException("타이머 설정이 올바르지 않습니다.");
+        }
+        return completedCupCount / cycleCount;
     }
 }

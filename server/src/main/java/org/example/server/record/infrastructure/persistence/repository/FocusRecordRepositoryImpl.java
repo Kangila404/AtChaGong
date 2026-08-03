@@ -1,6 +1,8 @@
 package org.example.server.record.infrastructure.persistence.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.example.server.record.domain.models.FocusRecord;
@@ -16,6 +18,11 @@ public class FocusRecordRepositoryImpl implements FocusRecordRepository {
     @Override
     public Optional<FocusRecord> findByUserId(Long userId) {
         return focusRecordJpaRepository.findByUserId(userId);
+    }
+
+    @Override
+    public List<FocusRecord> findByUserIdAndFocusedDate(Long userId, LocalDate focusedDate) {
+        return focusRecordJpaRepository.findByUserIdAndFocusedDateOrderByStartedAtAsc(userId, focusedDate);
     }
 
     @Override
