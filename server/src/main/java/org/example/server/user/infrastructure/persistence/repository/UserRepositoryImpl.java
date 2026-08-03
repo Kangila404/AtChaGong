@@ -14,11 +14,11 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<User> findById(Long id) {
-        return Optional.empty();
+        return userJpaRepository.findById(id);
     }
 
     @Override
     public Optional<User> findByUserId(String userId) {
-        return Optional.empty();
+        return userJpaRepository.findByUserId(userId);
     }
 }
