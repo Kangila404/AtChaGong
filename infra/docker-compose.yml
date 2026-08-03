@@ -3,6 +3,7 @@ name: atchagong
 services:
   mysql:
     image: mysql:8.0
+    platform: linux/arm64/v8
     container_name: atchagong-mysql
     ports:
       - "${MYSQL_PORT}:3306"
@@ -27,6 +28,8 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    platform: linux/arm64/v8
+    user: "65534:65534"
     container_name: atchagong-prometheus
     ports:
       - "9090:9090"
@@ -39,6 +42,7 @@ services:
 
   loki:
     image: grafana/loki:latest
+    platform: linux/arm64/v8
     container_name: atchagong-loki
     command: -config.file=/etc/loki/loki-config.yml
     ports:
@@ -50,6 +54,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    platform: linux/arm64/v8
     container_name: atchagong-grafana
     ports:
       - "3000:3000"
