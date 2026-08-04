@@ -9,13 +9,17 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.server.common.entity.BaseEntity;
 
+@Builder
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "refresh_token")
 public class RefreshToken extends BaseEntity {
 
@@ -34,4 +38,16 @@ public class RefreshToken extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime revokedAt;
+
+    // 비즈니스 로직
+    // 1. 토큰 만료 확인
+    public boolean isExpired(){
+        return LocalDateTime.now().isAfter(expiredAt);
+    }
+
+    // 2. 재로그인 시 토큰 날짜 업데이트
+    public void updateToken(String refreshToken, LocalDateTime expiredAt){
+        this.tokenHash = refreshToken;
+        this.expiredAt = expiredAt;
+    }
 }
