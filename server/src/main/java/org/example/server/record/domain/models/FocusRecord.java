@@ -31,7 +31,7 @@ public class FocusRecord extends BaseEntity {
     private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "beverage_id", nullable = false)
+    @JoinColumn(name = "beverage_id")
     private Beverage beverage;
 
     // 설정된 집중 시간
@@ -51,4 +51,24 @@ public class FocusRecord extends BaseEntity {
     // 일별·월별 기록 조회용
     @Column(name = "focused_date", nullable = false)
     private LocalDate focusedDate;
+
+    public static FocusRecord create(
+        Long userId,
+        Beverage beverage,
+        int focusMinutes,
+        int focusedSeconds,
+        LocalDateTime startedAt,
+        LocalDateTime completedAt,
+        LocalDate focusedDate
+    ) {
+        FocusRecord focusRecord = new FocusRecord();
+        focusRecord.userId = userId;
+        focusRecord.beverage = beverage;
+        focusRecord.focusMinutes = focusMinutes;
+        focusRecord.focusedSeconds = focusedSeconds;
+        focusRecord.startedAt = startedAt;
+        focusRecord.completedAt = completedAt;
+        focusRecord.focusedDate = focusedDate;
+        return focusRecord;
+    }
 }
