@@ -10,15 +10,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.server.common.entity.BaseEntity;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 
+@Builder
 @Getter
 @Entity
 @Table(name = "users")
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 

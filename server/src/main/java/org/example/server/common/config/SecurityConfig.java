@@ -24,10 +24,17 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()  // 로그인, 회원가입은 토큰 없이 허용
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // 스웨거 통과
+                .requestMatchers("/api/v1/auth/**").permitAll()  // 로그인, 회원가입은 토큰 없이 허용
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/**"
+                ).permitAll() // 스웨거 통과
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/api/dev/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()                // 나머지 토큰
             )
             .addFilterBefore(new JwtFilter(jwtTokenProvider),  // JwtFilter 등록

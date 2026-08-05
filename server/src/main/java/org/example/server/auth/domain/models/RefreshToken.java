@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -36,7 +35,7 @@ public class RefreshToken extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expiredAt;
 
-    @Column(nullable = false)
+    @Column
     private LocalDateTime revokedAt;
 
     // 비즈니스 로직

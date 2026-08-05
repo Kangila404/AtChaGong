@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import org.example.server.user.domain.models.User;
 
 public record UserMeResponse(
-    String userId,
     String nickname,
     String userStatus,
     String userRole,
@@ -13,10 +12,14 @@ public record UserMeResponse(
 ) {
 
 
-//    public static of(User user){
-//        UserMeResponse dto =  new UserMeResponse();
-//        dto.message = user.getUserId();
-//        return dto;
-//    }
+    public static UserMeResponse from(User user) {
+        return new UserMeResponse(
+            user.getNickname(),
+            user.getUserStatus().name(),
+            user.getUserRole().name(),
+            user.isOnboardingCompleted(),
+            user.getLastLoginAt()
+        );
+    }
 
 }

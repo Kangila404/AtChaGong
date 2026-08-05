@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "유저 API")
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -26,10 +26,9 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserMeResponse>> getMe(
-        @AuthenticationPrincipal String userId,
-        @Valid @RequestBody UserMeRequest request
+        @AuthenticationPrincipal String userId
     ){
-        UserMeResponse response = userService.getMe(userId, request);
+        UserMeResponse response = userService.getMe(userId);
         return ResponseEntity.ok(ApiResponse.success((response)));
     }
 
