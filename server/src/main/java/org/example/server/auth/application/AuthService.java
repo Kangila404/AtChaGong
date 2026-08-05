@@ -11,6 +11,7 @@ import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,14 +23,15 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public RefreshTokenResponse reissue(RefreshTokenRequest request){
         RefreshToken refreshToken = findRefreshTokenOrThrow(request.refreshToken());
         validateRefreshTokenExpired(refreshToken);
 
-        User user = findUserByUserIdOrThrow(refreshToken.getUserId());
+        User user = findUserByIdOrThrow(refreshToken.getUserId());
         validateUserStatus(user.getUserStatus());
 
-        String issuedRefreshToken = saveRefreshToken(user.getId());
+        String issuedRefreshToken = saveRefreshToken(user.getUserId());
         String accessToken = jwtTokenProvider.createAccessToken(user.getUserId(), user.getUserRole().name());
         return RefreshTokenResponse.of(issuedRefreshToken, accessToken);
     }
@@ -37,10 +39,16 @@ public class AuthService {
     // ============= 메서드 모음 ============= //
 
     // 1. (Long)id -> User 조회
-    private User findUserByUserIdOrThrow(Long userId){
+    private User findUserByIdOrThrow(Long userId){
         return userRepository.findById(userId)
             .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
     }
+
+    // 2. (string)id -> User 조회
+        private User findUserByUserIdOrThrow(String userId){
+            return userRepository.findByUserId(userId)
+                .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        }
 
     // ============= 검증 메서드 모음 ============= //
 
@@ -66,14 +74,15 @@ public class AuthService {
     }
 
     // 3. 리프레시 토큰 발급 및 저장
-    private String saveRefreshToken(Long userId){
+    private String saveRefreshToken(String userId){
+        User user = findUserByUserIdOrThrow(userId);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
-        RefreshToken savedToken = refreshTokenRepository.findByUserId(userId).orElse(null);
+        RefreshToken savedToken = refreshTokenRepository.findByUserId(user.getId()).orElse(null);
 
         if(savedToken == null){
             refreshTokenRepository.save(
                 RefreshToken.builder()
-                    .userId(userId)
+                    .userId(user.getId())
                     .tokenHash(refreshToken)
                     .expiredAt(LocalDateTime.now().plusDays(7))
                     .build());

@@ -40,7 +40,7 @@ public class JwtTokenProvider {
     }
 
     // 2. RefreshToken 생성
-    public String createRefreshToken(Long userId){
+    public String createRefreshToken(String userId){
         return Jwts.builder()
             .setSubject(String.valueOf(userId))
             .setIssuedAt(new Date())

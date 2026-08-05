@@ -17,12 +17,10 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public UserMeResponse getMe(String userId, UserMeRequest request){
+    public UserMeResponse getMe(String userId){
         User user = findUserByUserIdOrThrow(userId);
         validateUseStatus(user);
-
-
-        return null;
+        return UserMeResponse.from(user);
     }
 
 
