@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +45,7 @@ public class User extends BaseEntity {
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
+    // 닉네임 설정용
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted;
 
@@ -54,5 +56,23 @@ public class User extends BaseEntity {
     private LocalDateTime deletedAt;
 
     // ============ 비즈니스 로직 ============ //
+    // 1. 유저 생성
+    public static User createSocialUser() {
+        String userId = UUID.randomUUID().toString();
+        String temporaryNickname = "사용자" + userId.replace("-", "").substring(0, 6);
+
+        return User.builder()
+            .userId(userId)
+            .nickname(temporaryNickname)
+            .userStatus(UserStatus.ACTIVE)
+            .userRole(UserRole.USER)
+            .onboardingCompleted(false)
+            .build();
+    }
+
+    // 2. 마지막 로그인 업데이트
+    public void updateLastLoginAt(){
+        this.lastLoginAt = LocalDateTime.now();
+    }
 
 }

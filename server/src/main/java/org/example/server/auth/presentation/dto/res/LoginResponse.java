@@ -2,16 +2,18 @@ package org.example.server.auth.presentation.dto.res;
 
 public record LoginResponse(
     String accessToken,
-    String refreshToken
+    String refreshToken,
+    boolean isOnboardingCompleted
 ) {
 
 
 
     public static LoginResponse of(
         String refreshToken,
-        String accessToken
+        String accessToken,
+        boolean isOnboardingCompleted
     ) {
-        return new LoginResponse(refreshToken, accessToken);
+        return new LoginResponse(refreshToken, accessToken, isOnboardingCompleted);
     }
 
 }

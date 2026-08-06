@@ -11,13 +11,15 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.server.auth.domain.enums.AuthType;
 import org.example.server.common.entity.BaseEntity;
 import org.example.server.user.domain.models.User;
 
-
+@Builder
 @Getter
 @Entity
 @Table(
@@ -26,6 +28,7 @@ import org.example.server.user.domain.models.User;
         @UniqueConstraint(name = "uk_auth_provider", columnNames = {"provider", "provider_id"})
     }
 )
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthAccount extends BaseEntity {
 
@@ -41,5 +44,19 @@ public class AuthAccount extends BaseEntity {
 
     @Column(name = "provider_id", nullable = false)
     private String providerId;
+
+    // ========= 비즈니스 로직 ========= //
+    // 1. authAccount 생성
+    public static AuthAccount create(
+        User user,
+        AuthType authType,
+        String providerId
+    ) {
+        return AuthAccount.builder()
+            .user(user)
+            .provider(authType)
+            .providerId(providerId)
+            .build();
+    }
 
 }

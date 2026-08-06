@@ -39,6 +39,10 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+    // 소셜 로그인
+    // 1. 구글
+    implementation 'com.google.api-client:google-api-client:2.8.1'
+
     // 시큐리티
     implementation 'org.springframework.boot:spring-boot-starter-security'
 

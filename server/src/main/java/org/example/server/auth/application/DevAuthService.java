@@ -56,7 +56,7 @@ public class DevAuthService {
             user.getUserRole().name()
         );
 
-        return LoginResponse.of(refreshToken, accessToken);
+        return LoginResponse.of(refreshToken, accessToken, user.isOnboardingCompleted());
     }
 
     // ============= 조회 메서드 모음 ============= //
