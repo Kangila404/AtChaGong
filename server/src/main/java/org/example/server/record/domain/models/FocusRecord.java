@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
@@ -52,7 +53,8 @@ public class FocusRecord extends BaseEntity {
     @Column(name = "focused_date", nullable = false)
     private LocalDate focusedDate;
 
-    public static FocusRecord create(
+    @Builder(access = AccessLevel.PRIVATE)
+    private FocusRecord(
         Long userId,
         Beverage beverage,
         int focusMinutes,
@@ -61,14 +63,31 @@ public class FocusRecord extends BaseEntity {
         LocalDateTime completedAt,
         LocalDate focusedDate
     ) {
-        FocusRecord focusRecord = new FocusRecord();
-        focusRecord.userId = userId;
-        focusRecord.beverage = beverage;
-        focusRecord.focusMinutes = focusMinutes;
-        focusRecord.focusedSeconds = focusedSeconds;
-        focusRecord.startedAt = startedAt;
-        focusRecord.completedAt = completedAt;
-        focusRecord.focusedDate = focusedDate;
-        return focusRecord;
+        this.userId = userId;
+        this.beverage = beverage;
+        this.focusMinutes = focusMinutes;
+        this.focusedSeconds = focusedSeconds;
+        this.startedAt = startedAt;
+        this.completedAt = completedAt;
+        this.focusedDate = focusedDate;
+    }
+
+    public static FocusRecord create(
+        Long userId,
+        Beverage beverage,
+        int focusMinutes,
+        int focusedSeconds,
+        LocalDateTime startedAt,
+        LocalDateTime completedAt
+    ) {
+        return FocusRecord.builder()
+            .userId(userId)
+            .beverage(beverage)
+            .focusMinutes(focusMinutes)
+            .focusedSeconds(focusedSeconds)
+            .startedAt(startedAt)
+            .completedAt(completedAt)
+            .focusedDate(completedAt.toLocalDate())
+            .build();
     }
 }

@@ -53,7 +53,6 @@ public class FocusRecordService {
         Beverage beverage = findBeverageOrNull(request.beverageId());
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
-        LocalDate focusedDate = request.completedAt().atZoneSameInstant(SEOUL_ZONE).toLocalDate();
 
         validateDuplicateFocusRecord(user.getId(), startedAt);
 
@@ -63,8 +62,7 @@ public class FocusRecordService {
             request.focusMinutes(),
             request.focusedSeconds(),
             startedAt,
-            completedAt,
-            focusedDate
+            completedAt
         );
         FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
 
