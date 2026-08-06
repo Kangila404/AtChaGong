@@ -2,6 +2,7 @@ package org.example.server.auth.application;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.auth.domain.enums.AuthType;
 import org.example.server.auth.domain.models.AuthAccount;
@@ -31,7 +32,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final AuthAccountRepository authAccountRepository;
-    private final SocialAuthProvider socialAuthProvider;
+    private final List<SocialAuthProvider> socialAuthProviders;
 
 
     @Transactional
@@ -50,13 +51,9 @@ public class AuthService {
     @Transactional
     public LoginResponse socialLogin(LoginRequest request) {
 
-        validateSupportedProvider(request.authType());
+        SocialAuthProvider provider = findProviderOrThrow(request.authType());
+        SocialUserInfo socialUserInfo = provider.verify(request.credential());
 
-        // 소셜 credential 검증 후 해당 소셜 계정의 고유 ID 추출
-        SocialUserInfo socialUserInfo =
-            socialAuthProvider.verify(request.credential());
-
-        // 기존 계정 조회, 처음 로그인한 계정이면 자동 등록
         AuthAccount authAccount = findOrCreateAuthAccount(
             request.authType(),
             socialUserInfo.providerId()
@@ -135,10 +132,11 @@ public class AuthService {
     }
 
     // 2. 소셜 로그인 종류 검증
-    private void validateSupportedProvider(AuthType authType) {
-        if (socialAuthProvider.supports() != authType) {
-            throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
-        }
+    private SocialAuthProvider findProviderOrThrow(AuthType authType) {
+        return socialAuthProviders.stream()
+            .filter(provider -> provider.supports() == authType)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 소셜 로그인입니다."));
     }
 
     // ============= JWT 메서드 모음 ============= //

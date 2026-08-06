@@ -42,6 +42,7 @@ dependencies {
     // 소셜 로그인
     // 1. 구글
     implementation 'com.google.api-client:google-api-client:2.8.1'
+    implementation("com.nimbusds:nimbus-jose-jwt:9.37.3")
 
     // 시큐리티
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -63,6 +64,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'spring.profiles.active', 'test'
 }
 
 tasks.named('bootRun') {
