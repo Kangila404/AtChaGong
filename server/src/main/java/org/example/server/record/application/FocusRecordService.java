@@ -50,10 +50,9 @@ public class FocusRecordService {
         validateUserStatus(user);
         validateCreateRequest(request);
 
-        Beverage beverage = findBeverageOrNull(request.beverageId());
+        Beverage beverage = findBeverageByIdOrThrow(request.beverageId());
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
-        LocalDate focusedDate = request.completedAt().atZoneSameInstant(SEOUL_ZONE).toLocalDate();
 
         validateDuplicateFocusRecord(user.getId(), startedAt);
 
@@ -63,8 +62,7 @@ public class FocusRecordService {
             request.focusMinutes(),
             request.focusedSeconds(),
             startedAt,
-            completedAt,
-            focusedDate
+            completedAt
         );
         FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
 
@@ -154,9 +152,9 @@ public class FocusRecordService {
     }
 
     // 2. (Long) beverageId -> Beverage 조회
-    private Beverage findBeverageOrNull(Long beverageId) {
+    private Beverage findBeverageByIdOrThrow(Long beverageId) {
         if (beverageId == null) {
-            return null;
+            throw new IllegalArgumentException("음료를 찾을 수 없습니다.");
         }
         return beverageRepository.findById(beverageId)
             .orElseThrow(() -> new IllegalArgumentException("음료를 찾을 수 없습니다."));

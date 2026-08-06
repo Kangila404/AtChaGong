@@ -3,6 +3,7 @@ package org.example.server.record.presentation.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.server.common.response.ApiResponse;
 import org.example.server.record.application.FocusRecordService;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
@@ -27,30 +28,30 @@ public class FocusRecordController {
     private final FocusRecordService focusRecordService;
 
     @PostMapping
-    public ResponseEntity<FocusRecordResponse> createFocusRecord(
+    public ResponseEntity<ApiResponse<FocusRecordResponse>> createFocusRecord(
         @AuthenticationPrincipal String userId,
         @Valid @RequestBody CreateFocusRecordRequest request
     ) {
         FocusRecordResponse response = focusRecordService.createFocusRecord(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     @GetMapping("/daily")
-    public ResponseEntity<DailyFocusRecordResponse> getDailyFocusRecords(
+    public ResponseEntity<ApiResponse<DailyFocusRecordResponse>> getDailyFocusRecords(
         @AuthenticationPrincipal String userId,
         @RequestParam String date
     ) {
         DailyFocusRecordResponse response = focusRecordService.getDailyFocusRecords(userId, date);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/monthly")
-    public ResponseEntity<MonthlyFocusRecordResponse> getMonthlyFocusRecords(
+    public ResponseEntity<ApiResponse<MonthlyFocusRecordResponse>> getMonthlyFocusRecords(
         @AuthenticationPrincipal String userId,
         @RequestParam String year,
         @RequestParam String month
     ) {
         MonthlyFocusRecordResponse response = focusRecordService.getMonthlyFocusRecords(userId, year, month);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
