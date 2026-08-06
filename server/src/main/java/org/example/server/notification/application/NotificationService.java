@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-    private static final int MAX_DEVICE_TOKEN_LENGTH = 4096;
+    private static final int MAX_DEVICE_TOKEN_LENGTH = 512;
 
     private final NotificationSettingRepository notificationSettingRepository;
     private final DeviceTokenRepository deviceTokenRepository;
@@ -67,6 +67,7 @@ public class NotificationService {
     public DeviceTokenResponse upsertDeviceToken(String userId, UpsertDeviceTokenRequest request) {
         User user = findUserByUserIdOrThrow(userId);
         validateUserStatus(user);
+        validateUpsertDeviceTokenRequest(request);
 
         String token = validateAndNormalizeToken(request.token());
         DeviceType platform = DeviceType.from(request.platform());
@@ -86,6 +87,7 @@ public class NotificationService {
     public void deactivateDeviceToken(String userId, DeleteDeviceTokenRequest request) {
         User user = findUserByUserIdOrThrow(userId);
         validateUserStatus(user);
+        validateDeleteDeviceTokenRequest(request);
 
         String token = validateAndNormalizeToken(request.token());
         deviceTokenRepository.findByToken(token)
@@ -105,10 +107,23 @@ public class NotificationService {
     }
 
     private void validateUpdateNotificationSettingRequest(UpdateNotificationSettingRequest request) {
-        if (request.focusStartEnabled() == null
+        if (request == null
+            || request.focusStartEnabled() == null
             || request.focusEndEnabled() == null
             || request.breakEndEnabled() == null) {
             throw new IllegalArgumentException("알림 설정이 올바르지 않습니다.");
+        }
+    }
+
+    private void validateUpsertDeviceTokenRequest(UpsertDeviceTokenRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
+        }
+    }
+
+    private void validateDeleteDeviceTokenRequest(DeleteDeviceTokenRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
         }
     }
 

@@ -28,7 +28,7 @@ public class DeviceToken extends BaseEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, unique = true, length = 4096)
+    @Column(nullable = false, unique = true, length = 512)
     private String token;
 
     @Enumerated(EnumType.STRING)
