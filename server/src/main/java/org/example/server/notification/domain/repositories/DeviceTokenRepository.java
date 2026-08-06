@@ -5,4 +5,6 @@ import org.example.server.notification.domain.models.DeviceToken;
 
 public interface DeviceTokenRepository {
     Optional<DeviceToken> findByUserId(Long userId);
+    Optional<DeviceToken> findByToken(String token);
+    DeviceToken save(DeviceToken deviceToken);
 }
