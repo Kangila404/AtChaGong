@@ -40,4 +40,27 @@ public class DeviceToken extends BaseEntity {
 
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
+
+    private DeviceToken(Long userId, String token, DeviceType platform, LocalDateTime lastUsedAt) {
+        this.userId = userId;
+        this.token = token;
+        this.platform = platform;
+        this.active = true;
+        this.lastUsedAt = lastUsedAt;
+    }
+
+    public static DeviceToken register(Long userId, String token, DeviceType platform, LocalDateTime lastUsedAt) {
+        return new DeviceToken(userId, token, platform, lastUsedAt);
+    }
+
+    public void reactivate(Long userId, DeviceType platform, LocalDateTime lastUsedAt) {
+        this.userId = userId;
+        this.platform = platform;
+        this.active = true;
+        this.lastUsedAt = lastUsedAt;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 }

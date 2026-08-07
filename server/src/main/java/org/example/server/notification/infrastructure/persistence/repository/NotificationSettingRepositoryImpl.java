@@ -13,7 +13,12 @@ public class NotificationSettingRepositoryImpl implements NotificationSettingRep
     private final NotificationSettingJpaRepository notificationSettingJpaRepository;
 
     @Override
-    public Optional<NotificationSetting> findByUserId(String userId) {
-        return Optional.empty();
+    public Optional<NotificationSetting> findByUserId(Long userId) {
+        return notificationSettingJpaRepository.findByUserId(userId);
+    }
+
+    @Override
+    public NotificationSetting save(NotificationSetting notificationSetting) {
+        return notificationSettingJpaRepository.save(notificationSetting);
     }
 }
