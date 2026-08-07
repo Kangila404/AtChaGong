@@ -7,9 +7,11 @@ import org.example.server.auth.application.AuthService;
 import org.example.server.auth.presentation.dto.req.LoginRequest;
 import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
+import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.common.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +33,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-//    public ResponseEntity<ApiResponse<LoginResponse>> socialLogin(LoginRequest request){
-//        LoginResponse response = authService.socialLogin();
-//    }
+    @PostMapping("/social-login")
+    public ResponseEntity<ApiResponse<LoginResponse>> socialLogin(LoginRequest request){
+        LoginResponse response = authService.socialLogin(request);
+        return  ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<LogoutResponse>> logout(@AuthenticationPrincipal String userId){
+        LogoutResponse response = authService.logout(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

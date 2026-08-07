@@ -1,11 +1,20 @@
 package org.example.server.auth.application;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.example.server.auth.domain.enums.AuthType;
+import org.example.server.auth.domain.models.AuthAccount;
 import org.example.server.auth.domain.models.RefreshToken;
+import org.example.server.auth.domain.repositories.AuthAccountRepository;
 import org.example.server.auth.domain.repositories.RefreshTokenRepository;
 import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
+import org.example.server.auth.presentation.dto.SocialUserInfo;
+import org.example.server.auth.presentation.dto.req.LoginRequest;
 import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
+import org.example.server.auth.presentation.dto.res.LoginResponse;
+import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
@@ -22,6 +31,9 @@ public class AuthService {
     // 리포지토리
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final AuthAccountRepository authAccountRepository;
+    private final List<SocialAuthProvider> socialAuthProviders;
+
 
     @Transactional
     public RefreshTokenResponse reissue(RefreshTokenRequest request){
@@ -36,6 +48,45 @@ public class AuthService {
         return RefreshTokenResponse.of(issuedRefreshToken, accessToken);
     }
 
+    @Transactional
+    public LoginResponse socialLogin(LoginRequest request) {
+
+        SocialAuthProvider provider = findProviderOrThrow(request.authType());
+        SocialUserInfo socialUserInfo = provider.verify(request.credential());
+
+        AuthAccount authAccount = findOrCreateAuthAccount(
+            request.authType(),
+            socialUserInfo.providerId()
+        );
+
+        User user = authAccount.getUser();
+
+        validateUserStatus(user.getUserStatus());
+        user.updateLastLoginAt();
+
+        String accessToken = jwtTokenProvider.createAccessToken(
+            user.getUserId(),
+            user.getUserRole().name()
+        );
+
+        String refreshToken = saveRefreshToken(user.getUserId());
+
+        return LoginResponse.of(
+            accessToken,
+            refreshToken,
+            user.isOnboardingCompleted()
+        );
+    }
+
+    @Transactional
+    public LogoutResponse logout(String userId){
+        User user = findUserByUserIdOrThrow(userId);
+        refreshTokenRepository.deleteByUserId(user.getId());
+        return new LogoutResponse("success");
+    }
+
+
+
     // ============= 메서드 모음 ============= //
 
     // 1. (Long)id -> User 조회
@@ -45,10 +96,31 @@ public class AuthService {
     }
 
     // 2. (string)id -> User 조회
-        private User findUserByUserIdOrThrow(String userId){
-            return userRepository.findByUserId(userId)
-                .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+    private User findUserByUserIdOrThrow(String userId){
+        return userRepository.findByUserId(userId)
+            .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
         }
+    // 3. AuthAccount 생성
+    private AuthAccount findOrCreateAuthAccount(
+        AuthType authType,
+        String providerId
+    ) {
+        return authAccountRepository
+            .findByProviderAndProviderId(authType, providerId)
+            .orElseGet(() -> createSocialAccount(authType, providerId));
+    }
+
+    // 4. 소셜 계정  생성 메서드
+    private AuthAccount createSocialAccount(AuthType authType, String providerId) {
+        User user = userRepository.save(
+            User.createSocialUser()
+        );
+
+        AuthAccount authAccount = AuthAccount.create(user, authType, providerId);
+
+        return authAccountRepository.save(authAccount);
+    }
+
 
     // ============= 검증 메서드 모음 ============= //
 
@@ -57,6 +129,14 @@ public class AuthService {
         if(!userStatus.equals(UserStatus.ACTIVE)){
             throw new IllegalArgumentException("비활성화된 유저입니다.");
         }
+    }
+
+    // 2. 소셜 로그인 종류 검증
+    private SocialAuthProvider findProviderOrThrow(AuthType authType) {
+        return socialAuthProviders.stream()
+            .filter(provider -> provider.supports() == authType)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 소셜 로그인입니다."));
     }
 
     // ============= JWT 메서드 모음 ============= //
@@ -84,10 +164,10 @@ public class AuthService {
                 RefreshToken.builder()
                     .userId(user.getId())
                     .tokenHash(refreshToken)
-                    .expiredAt(LocalDateTime.now().plusDays(7))
+                    .expiredAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7))
                     .build());
         } else {
-            savedToken.updateToken(refreshToken, LocalDateTime.now().plusDays(7));
+            savedToken.updateToken(refreshToken, LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7));
         }
         return refreshToken;
     }
