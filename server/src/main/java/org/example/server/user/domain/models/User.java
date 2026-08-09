@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,8 @@ import org.example.server.user.domain.enums.UserStatus;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -72,7 +75,28 @@ public class User extends BaseEntity {
 
     // 2. 마지막 로그인 업데이트
     public void updateLastLoginAt(){
-        this.lastLoginAt = LocalDateTime.now();
+        this.lastLoginAt = LocalDateTime.now(KST);
     }
 
+    // 3. 닉네임 업데이트
+    public void updateNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 비어있을 수 없습니다.");
+        }
+        this.nickname = nickname;
+    }
+
+    // 4. 회원탈퇴
+    public void withdraw(){
+        if(this.userStatus == UserStatus.WITHDRAWN){
+            throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
+        }
+        this.userStatus = UserStatus.WITHDRAWN;
+        this.deletedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    }
+
+    // 5. 온보딩 처리
+    public void  completeOnboarding(){
+        this.onboardingCompleted = true;
+    }
 }
