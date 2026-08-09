@@ -1,5 +1,6 @@
 package org.example.server.beverage.infrastructure.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
@@ -15,5 +16,10 @@ public class BeverageRepositoryImpl implements BeverageRepository {
     @Override
     public Optional<Beverage> findById(Long id) {
         return beverageJpaRepository.findById(id);
+    }
+
+    @Override
+    public List<Beverage> findAll() {
+        return beverageJpaRepository.findAll();
     }
 }
