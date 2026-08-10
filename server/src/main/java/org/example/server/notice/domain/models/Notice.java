@@ -1,4 +1,4 @@
-package org.example.server.admin.domain.models;
+package org.example.server.notice.domain.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.server.common.entity.BaseEntity;
@@ -26,10 +27,34 @@ public class Notice extends BaseEntity {
     @Column(name = "admin_id", nullable = false)
     private Long adminId;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 100)
     private String title;
 
     @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private Notice(Long adminId, String title, String content) {
+        this.adminId = adminId;
+        this.title = title;
+        this.content = content;
+    }
+
+    public static Notice create(Long adminId, String title, String content) {
+        return Notice.builder()
+            .adminId(adminId)
+            .title(title)
+            .content(content)
+            .build();
+    }
+
+    public void update(String title, String content) {
+        if (title != null) {
+            this.title = title;
+        }
+        if (content != null) {
+            this.content = content;
+        }
+    }
 }
