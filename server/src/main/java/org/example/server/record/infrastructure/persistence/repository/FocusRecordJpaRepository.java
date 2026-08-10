@@ -21,4 +21,6 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecord,Long
     List<FocusRecord> findAllByUserId(Long userId);
 
     List<FocusRecord> findAllByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+
+    List<FocusRecord> findAllByUserIdAndFocusedDate(Long userId, LocalDate focusedDate);
 }

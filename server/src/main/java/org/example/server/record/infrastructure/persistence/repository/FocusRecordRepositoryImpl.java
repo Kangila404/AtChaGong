@@ -54,4 +54,9 @@ public class FocusRecordRepositoryImpl implements FocusRecordRepository {
     public List<FocusRecord> findAllByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate) {
         return focusRecordJpaRepository.findAllByUserIdAndFocusedDateBetween(userId, startDate, endDate);
     }
+
+    @Override
+    public List<FocusRecord> findAllByUserIdAndFocusedDate(Long userId, LocalDate focusedDate) {
+        return focusRecordJpaRepository.findAllByUserIdAndFocusedDate(userId, focusedDate);
+    }
 }

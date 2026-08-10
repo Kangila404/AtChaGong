@@ -43,14 +43,14 @@ public class StatisticsService {
         String resolvedPeriod = resolvePeriod(request.period());
         List<FocusRecord> allRecords = findFocusRecordByUserIdOrNull(user.getId());
         List<FocusRecord> filtered = filterByPeriod(allRecords, resolvedPeriod);
-        TimerSetting timerSetting = findTimerSettingByUserIdOrThrow(user.getId());
+        int cycleCount = resolveCycleCount(user.getId());
 
         long totalFocusedSeconds = sumFocusedSeconds(filtered);
         long totalFocusedHours = totalFocusedSeconds / 3600;
         int completedCupCount = filtered.size();
-        int completedCycleCount = calculateCompletedCycleCount(completedCupCount, timerSetting.getCycleCount());
+        int completedCycleCount = calculateTotalCompletedCycleCount(filtered, cycleCount);
 
-        List<LocalDate> achievedDatesAsc = calculateCycleAchievedDates(allRecords, timerSetting.getCycleCount());
+        List<LocalDate> achievedDatesAsc = calculateCycleAchievedDates(allRecords, cycleCount);
         int currentStreakDays = calculateCurrentStreak(achievedDatesAsc);
         int longestStreakDays = calculateLongestStreak(achievedDatesAsc);
 
@@ -71,7 +71,7 @@ public class StatisticsService {
         validateUserStatus(user.getUserStatus());
         validateYearMonth(year, month);
 
-        TimerSetting timerSetting = findTimerSettingByUserIdOrThrow(user.getId());
+        int cycleCount = resolveCycleCount(user.getId());
         YearMonth yearMonth = YearMonth.of(year, month);
 
         List<FocusRecord> records = focusRecordRepository.findAllByUserIdAndFocusedDateBetween(
@@ -82,13 +82,13 @@ public class StatisticsService {
             .collect(Collectors.groupingBy(FocusRecord::getFocusedDate));
 
         List<CalendarResponse.DayStat> days = byDate.entrySet().stream()
-            .map(entry -> toDayStat(entry.getKey(), entry.getValue(), timerSetting.getCycleCount()))
+            .map(entry -> toDayStat(entry.getKey(), entry.getValue(), cycleCount))
             .sorted(Comparator.comparing(CalendarResponse.DayStat::date))
             .toList();
 
         long totalFocusedSeconds = sumFocusedSeconds(records);
         int completedCupCount = records.size();
-        int completedCycleCount = calculateCompletedCycleCount(completedCupCount, timerSetting.getCycleCount());
+        int completedCycleCount = calculateTotalCompletedCycleCount(records, cycleCount);
 
         return new CalendarResponse(year, month, totalFocusedSeconds, completedCupCount, completedCycleCount, days);
     }
@@ -108,9 +108,10 @@ public class StatisticsService {
         return focusRecordRepository.findAllByUserId(userId);
     }
 
-    private TimerSetting findTimerSettingByUserIdOrThrow(Long userId) {
+    private int resolveCycleCount(Long userId) {
         return timerSettingRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("타이머 설정을 찾을 수 없습니다."));
+            .map(TimerSetting::getCycleCount)
+            .orElse(TimerSetting.DEFAULT_CYCLE_COUNT);
     }
 
     // =============== 검증 메서드 =============== //
@@ -159,8 +160,23 @@ public class StatisticsService {
             .sum();
     }
 
+    // 하루치 레코드 안에서의 완료 사이클 수 (toDayStat처럼 이미 날짜 단위로 쪼개진 리스트에만 사용)
     private int calculateCompletedCycleCount(int completedCupCount, int cycleCount) {
         return cycleCount > 0 ? completedCupCount / cycleCount : 0;
+    }
+
+    // 여러 날짜가 섞인 기간(month/all) 합계는 날짜별로 나눠서 사이클을 구한 뒤 합산해야 한다.
+    // 예: cycleCount=4일 때 이틀에 걸쳐 2컵씩 마셨다면 총 4컵이어도 완료 사이클은 0이어야 한다.
+    private int calculateTotalCompletedCycleCount(List<FocusRecord> records, int cycleCount) {
+        if (cycleCount <= 0) {
+            return 0;
+        }
+        Map<LocalDate, Long> countByDate = records.stream()
+            .collect(Collectors.groupingBy(FocusRecord::getFocusedDate, Collectors.counting()));
+
+        return countByDate.values().stream()
+            .mapToInt(count -> (int) (count / cycleCount))
+            .sum();
     }
 
     private CalendarResponse.DayStat toDayStat(LocalDate date, List<FocusRecord> dayRecords, int cycleCount) {
