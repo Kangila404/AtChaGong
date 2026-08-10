@@ -9,16 +9,10 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 형식 또는 필드 값이 올바르지 않습니다."),
-    INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "페이지 요청 값이 올바르지 않습니다."),
-    INVALID_NOTICE_ID(HttpStatus.BAD_REQUEST, "공지 ID가 올바르지 않습니다."),
-    INVALID_NOTICE_TITLE(HttpStatus.BAD_REQUEST, "공지 제목이 올바르지 않습니다."),
-    INVALID_NOTICE_CONTENT(HttpStatus.BAD_REQUEST, "공지 내용이 올바르지 않습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Access Token이 없거나 유효하지 않습니다."),
     ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Access Token이 만료되었습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
-    NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
     CONFLICT(HttpStatus.CONFLICT, "현재 상태와 충돌합니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

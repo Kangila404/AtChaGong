@@ -5,16 +5,16 @@ import org.example.server.admin.presentation.dto.req.NoticeCreateRequest;
 import org.example.server.admin.presentation.dto.req.NoticeUpdateRequest;
 import org.example.server.admin.presentation.dto.res.NoticeCreateResponse;
 import org.example.server.admin.presentation.dto.res.NoticeUpdateResponse;
-import org.example.server.common.exception.AtchagongException;
-import org.example.server.common.exception.ErrorCode;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -69,36 +69,36 @@ public class AdminNoticeService {
 
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new AtchagongException(ErrorCode.USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
     }
 
     private Notice findNoticeByIdOrThrow(Long noticeId) {
         return noticeRepository.findById(noticeId)
-            .orElseThrow(() -> new AtchagongException(ErrorCode.NOTICE_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."));
     }
 
     private void validateNoticeId(Long noticeId) {
         if (noticeId == null || noticeId < 1) {
-            throw new AtchagongException(ErrorCode.INVALID_NOTICE_ID);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 ID가 올바르지 않습니다.");
         }
     }
 
     private void validateAdminUser(User user) {
         if (user.getUserStatus() != UserStatus.ACTIVE || user.getUserRole() != UserRole.ADMIN) {
-            throw new AtchagongException(ErrorCode.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
         }
     }
 
     private void validateHasUpdatableField(NoticeUpdateRequest request) {
         if (request == null || (request.title() == null && request.content() == null)) {
-            throw new AtchagongException(ErrorCode.INVALID_REQUEST);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수정할 공지 필드가 없습니다.");
         }
     }
 
     private String validateTitle(String title) {
         String trimmedTitle = trim(title);
         if (trimmedTitle.isEmpty() || trimmedTitle.length() > MAX_TITLE_LENGTH) {
-            throw new AtchagongException(ErrorCode.INVALID_NOTICE_TITLE);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 제목이 올바르지 않습니다.");
         }
         return trimmedTitle;
     }
@@ -106,7 +106,7 @@ public class AdminNoticeService {
     private String validateContent(String content) {
         String trimmedContent = trim(content);
         if (trimmedContent.isEmpty()) {
-            throw new AtchagongException(ErrorCode.INVALID_NOTICE_CONTENT);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 내용이 올바르지 않습니다.");
         }
         return trimmedContent;
     }
