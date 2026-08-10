@@ -5,4 +5,5 @@ import org.example.server.timer.domain.models.TimerSetting;
 
 public interface TimerSettingRepository {
     Optional<TimerSetting> findByUserId(Long userId);
+    TimerSetting save(TimerSetting timerSetting);
 }

@@ -22,4 +22,9 @@ public class BeverageRepositoryImpl implements BeverageRepository {
     public List<Beverage> findAll() {
         return beverageJpaRepository.findAll();
     }
+
+    @Override
+    public boolean existsById(Long id) {
+        return beverageJpaRepository.existsById(id);
+    }
 }
