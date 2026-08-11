@@ -28,6 +28,11 @@ import org.example.server.common.entity.BaseEntity;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TimerSetting  extends BaseEntity {
 
+    // 디폴트 값
+    public static final int DEFAULT_FOCUS_MINUTES = 25;
+    public static final int DEFAULT_BREAK_MINUTES = 5;
+    public static final int DEFAULT_CYCLE_COUNT = 4;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

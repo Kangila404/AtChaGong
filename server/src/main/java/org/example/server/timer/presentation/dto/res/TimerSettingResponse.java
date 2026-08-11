@@ -10,9 +10,6 @@ public record TimerSettingResponse(
     int cycleCount,
     boolean isCustomized
 ) {
-    private static final int DEFAULT_FOCUS_MINUTES = 25;
-    private static final int DEFAULT_BREAK_MINUTES = 5;
-    private static final int DEFAULT_CYCLE_COUNT = 4;
 
     public static TimerSettingResponse from(TimerSetting timerSetting) {
         return new TimerSettingResponse(
@@ -27,9 +24,9 @@ public record TimerSettingResponse(
     public static TimerSettingResponse defaultResponse() {
         return new TimerSettingResponse(
             null,
-            DEFAULT_FOCUS_MINUTES,
-            DEFAULT_BREAK_MINUTES,
-            DEFAULT_CYCLE_COUNT,
+            TimerSetting.DEFAULT_FOCUS_MINUTES,
+            TimerSetting.DEFAULT_BREAK_MINUTES,
+            TimerSetting.DEFAULT_CYCLE_COUNT,
             false
         );
     }

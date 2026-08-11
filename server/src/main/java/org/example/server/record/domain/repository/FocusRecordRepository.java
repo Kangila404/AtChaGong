@@ -12,4 +12,7 @@ public interface FocusRecordRepository {
     List<FocusRecord> findByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
     boolean existsByUserIdAndStartedAt(Long userId, LocalDateTime startedAt);
     FocusRecord save(FocusRecord focusRecord);
+    List<FocusRecord> findAllByUserId(Long userId);
+    List<FocusRecord> findAllByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+    List<FocusRecord> findAllByUserIdAndFocusedDate(Long userId, LocalDate focusedDate);
 }
