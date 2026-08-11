@@ -31,17 +31,14 @@ public record DailyFocusRecordResponse(
 
     public record DailyRecord(
         Long focusRecordId,
-        Long beverageId,
         int focusMinutes,
         int focusedSeconds,
         OffsetDateTime startedAt,
         OffsetDateTime completedAt
     ) {
         public static DailyRecord of(FocusRecord focusRecord, OffsetDateTime startedAt, OffsetDateTime completedAt) {
-            Long beverageId = focusRecord.getBeverage() == null ? null : focusRecord.getBeverage().getId();
             return new DailyRecord(
                 focusRecord.getId(),
-                beverageId,
                 focusRecord.getFocusMinutes(),
                 focusRecord.getFocusedSeconds(),
                 startedAt,
