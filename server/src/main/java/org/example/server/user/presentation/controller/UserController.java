@@ -57,13 +57,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "온보딩 API")
-    @PatchMapping("/me/onboarding")
-    public ResponseEntity<ApiResponse<OnboardingResponse>> onboarding(
-        @AuthenticationPrincipal String userId,
-        OnboardingRequest request){
-        OnboardingResponse response = userService.onboarding(userId, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+//    @Operation(summary = "온보딩 API")
+//    @PatchMapping("/me/onboarding")
+//    public ResponseEntity<ApiResponse<OnboardingResponse>> onboarding(
+//        @AuthenticationPrincipal String userId,
+//        OnboardingRequest request){
+//        OnboardingResponse response = userService.onboarding(userId, request);
+//        return ResponseEntity.ok(ApiResponse.success(response));
+//    }
 
 }

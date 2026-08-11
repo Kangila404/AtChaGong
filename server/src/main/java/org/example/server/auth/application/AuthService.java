@@ -9,6 +9,8 @@ import org.example.server.auth.domain.models.AuthAccount;
 import org.example.server.auth.domain.models.RefreshToken;
 import org.example.server.auth.domain.repositories.AuthAccountRepository;
 import org.example.server.auth.domain.repositories.RefreshTokenRepository;
+import org.example.server.auth.exception.AuthErrorCode;
+import org.example.server.auth.exception.AuthException;
 import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.example.server.auth.presentation.dto.SocialUserInfo;
 import org.example.server.auth.presentation.dto.req.LoginRequest;
@@ -19,6 +21,8 @@ import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +46,7 @@ public class AuthService {
 
         User user = findUserByIdOrThrow(refreshToken.getUserId());
         validateUserStatus(user.getUserStatus());
+        validateRefreshTokenRevoked(refreshToken);
 
         String issuedRefreshToken = saveRefreshToken(user.getUserId());
         String accessToken = jwtTokenProvider.createAccessToken(user.getUserId(), user.getUserRole().name());
@@ -92,13 +97,13 @@ public class AuthService {
     // 1. (Long)id -> User 조회
     private User findUserByIdOrThrow(Long userId){
         return userRepository.findById(userId)
-            .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(()-> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
 
     // 2. (string)id -> User 조회
     private User findUserByUserIdOrThrow(String userId){
         return userRepository.findByUserId(userId)
-            .orElseThrow(()-> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(()-> new UserException(UserErrorCode.USER_NOT_FOUND));
         }
     // 3. AuthAccount 생성
     private AuthAccount findOrCreateAuthAccount(
@@ -126,8 +131,10 @@ public class AuthService {
 
     // 1. 유저 상태 검증
     private void validateUserStatus(UserStatus userStatus){
-        if(!userStatus.equals(UserStatus.ACTIVE)){
-            throw new IllegalArgumentException("비활성화된 유저입니다.");
+        switch (userStatus) {
+            case WITHDRAWN -> throw new UserException(UserErrorCode.WITHDRAWN_USER);
+            case SUSPENDED -> throw new UserException(UserErrorCode.SUSPENDED_USER);
+            case ACTIVE -> { }
         }
     }
 
@@ -136,21 +143,28 @@ public class AuthService {
         return socialAuthProviders.stream()
             .filter(provider -> provider.supports() == authType)
             .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 소셜 로그인입니다."));
+            .orElseThrow(() -> new AuthException(AuthErrorCode.UNSUPPORTED_PROVIDER));
+    }
+
+    // 3. 리프레시 토큰 폐기 여부 확인
+    private void validateRefreshTokenRevoked(RefreshToken refreshToken){
+        if(refreshToken.isRevoked()){
+            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_REVOKED);
+        }
     }
 
     // ============= JWT 메서드 모음 ============= //
     // 1. 리프레시 토큰 기한 검증
     private void validateRefreshTokenExpired(RefreshToken refreshToken){
         if(refreshToken.isExpired()){
-            throw new IllegalArgumentException(("만료된 토큰입니다."));
+            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_EXPIRED);
         }
     }
 
     // 2. tokenHash -> refreshToken 조회
     private RefreshToken findRefreshTokenOrThrow(String hashToken){
         return refreshTokenRepository.findByTokenHash(hashToken)
-            .orElseThrow(()-> new IllegalArgumentException("토큰을 찾을 수 없습니다."));
+            .orElseThrow(()-> new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN));
     }
 
     // 3. 리프레시 토큰 발급 및 저장

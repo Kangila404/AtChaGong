@@ -28,7 +28,6 @@ public class JwtTokenProvider {
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
-    // 1. AccessToken 생성
     public String createAccessToken(String userId, String role){
         return Jwts.builder()
             .setSubject(String.valueOf(userId))
@@ -39,7 +38,6 @@ public class JwtTokenProvider {
             .compact();
     }
 
-    // 2. RefreshToken 생성
     public String createRefreshToken(String userId){
         return Jwts.builder()
             .setSubject(String.valueOf(userId))
@@ -49,27 +47,25 @@ public class JwtTokenProvider {
             .compact();
     }
 
-    // 3-1. 토큰 -> role 추출
     public String getRole(String token){
-        return getClaims(token).get("role", String.class);
-    }
-    // 3-2. 토큰 -> user의 Id 추출
-    public String getUserId(String token){
-        return getClaims(token).getSubject();
+        return parseClaims(token).get("role", String.class);
     }
 
-    // 4. 토큰 유효성 검증
+    public String getUserId(String token){
+        return parseClaims(token).getSubject();
+    }
+
     public boolean validateToken(String token){
         try{
-            getClaims(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e){
             return false;
         }
     }
 
-    // 5. 토큰 값 꺼내기
-    private Claims getClaims(String token){
+    // private → public, 이름 getClaims → parseClaims
+    public Claims parseClaims(String token){
         return Jwts.parserBuilder()
             .setSigningKey(key)
             .build()

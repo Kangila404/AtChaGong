@@ -7,6 +7,8 @@ import java.security.GeneralSecurityException;
 import lombok.RequiredArgsConstructor;
 import org.example.server.auth.application.SocialAuthProvider;
 import org.example.server.auth.domain.enums.AuthType;
+import org.example.server.auth.exception.AuthErrorCode;
+import org.example.server.auth.exception.AuthException;
 import org.example.server.auth.presentation.dto.SocialUserInfo;
 import org.springframework.stereotype.Component;
 
@@ -26,20 +28,16 @@ public class GoogleSocialAuthProvider implements SocialAuthProvider {
         try {
             GoogleIdToken idToken = verifier.verify(credential);
 
-            if(idToken==null){
-                throw new IllegalArgumentException("유효하지 않은 토근입니다.");
+            if (idToken == null) {
+                throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
             }
 
             GoogleIdToken.Payload payload = idToken.getPayload();
 
             return new SocialUserInfo(payload.getSubject());
 
-        } catch (GeneralSecurityException | IOException exception){
-            throw new IllegalArgumentException(
-                "Google 로그인 인증에 실패했습니다.",
-                exception
-            );
+        } catch (GeneralSecurityException | IOException exception) {
+            throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN, exception);
         }
-
     }
 }

@@ -3,14 +3,20 @@ package org.example.server.timer.application;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.exception.BeverageErrorCode;
+import org.example.server.beverage.exception.BeverageException;
 import org.example.server.timer.domain.models.TimerSetting;
 import org.example.server.timer.domain.repository.TimerSettingRepository;
+import org.example.server.timer.exception.TimerErrorCode;
+import org.example.server.timer.exception.TimerException;
 import org.example.server.timer.presentation.dto.req.SaveTimerRequest;
 import org.example.server.timer.presentation.dto.res.SaveTimerResponse;
 import org.example.server.timer.presentation.dto.res.TimerSettingResponse;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,33 +63,35 @@ public class TimerSettingService {
     // ================ 조회 메서드 모음 ================ //
     private User findUserByUserIdOrElseThrow(String userId){
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
 
     private Beverage findBeverageByIdOrElseThrow(Long beverageId){
         if (beverageId == null) {
-            throw new IllegalArgumentException("beverageId는 필수입니다.");
+            throw new BeverageException(BeverageErrorCode.BEVERAGE_ID_REQUIRED);
         }
         return beverageRepository.findById(beverageId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 음료입니다."));
+            .orElseThrow(() -> new BeverageException(BeverageErrorCode.BEVERAGE_NOT_FOUND));
     }
 
     // ================ 검증 메서드 모음 ================ //
     private void validateUserStatus(UserStatus userStatus){
-        if(!userStatus.equals(UserStatus.ACTIVE)){
-            throw new IllegalArgumentException("비활성화된 유저입니다.");
+        switch (userStatus) {
+            case WITHDRAWN -> throw new UserException(UserErrorCode.WITHDRAWN_USER);
+            case SUSPENDED -> throw new UserException(UserErrorCode.SUSPENDED_USER);
+            case ACTIVE -> { }
         }
     }
 
     private void validateTimerValues(SaveTimerRequest request){
         if(request.focusMinutes() == null || request.focusMinutes() <= 0){
-            throw new IllegalArgumentException("집중 시간은 1분 이상이어야 합니다.");
+            throw new TimerException(TimerErrorCode.INVALID_FOCUS_MINUTES);
         }
         if(request.breakMinutes() == null || request.breakMinutes() <= 0){
-            throw new IllegalArgumentException("휴식 시간은 1분 이상이어야 합니다.");
+            throw new TimerException(TimerErrorCode.INVALID_BREAK_MINUTES);
         }
         if(request.cycleCount() == null || request.cycleCount() <= 0){
-            throw new IllegalArgumentException("반복 횟수는 1회 이상이어야 합니다.");
+            throw new TimerException(TimerErrorCode.INVALID_CYCLE_COUNT);
         }
     }
 }

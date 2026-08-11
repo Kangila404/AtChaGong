@@ -6,11 +6,11 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import org.example.server.auth.application.SocialAuthProvider;
 import org.example.server.auth.domain.enums.AuthType;
+import org.example.server.auth.exception.AuthErrorCode;
+import org.example.server.auth.exception.AuthException;
 import org.example.server.auth.presentation.dto.SocialUserInfo;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.stereotype.Component;
-
-
 
 @Component
 public class AppleSocialAuthProvider implements SocialAuthProvider {
@@ -45,19 +45,19 @@ public class AppleSocialAuthProvider implements SocialAuthProvider {
             return new SocialUserInfo(claims.getSubject());
 
         } catch (Exception exception) {
-            throw new IllegalArgumentException("Apple 로그인 인증에 실패했습니다.", exception);
+            throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN, exception);
         }
     }
 
     private void validateIssuer(JWTClaimsSet claims) {
         if (!APPLE_ISSUER.equals(claims.getIssuer())) {
-            throw new IllegalArgumentException("유효하지 않은 발급자입니다.");
+            throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
         }
     }
 
     private void validateAudience(JWTClaimsSet claims) {
         if (!claims.getAudience().contains(clientId)) {
-            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+            throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
         }
     }
 }
