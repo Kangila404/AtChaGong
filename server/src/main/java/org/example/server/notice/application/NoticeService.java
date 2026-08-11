@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
+import org.example.server.notice.presentation.dto.req.NoticePageRequest;
 import org.example.server.notice.presentation.dto.res.NoticeDetailResponse;
 import org.example.server.notice.presentation.dto.res.NoticePageResponse;
 import org.example.server.notice.presentation.dto.res.NoticeSummaryResponse;
@@ -22,17 +23,16 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class NoticeService {
 
-    private static final int MAX_PAGE_SIZE = 100;
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 
     private final NoticeRepository noticeRepository;
 
     @Transactional(readOnly = true)
-    public NoticePageResponse getNotices(Integer page, Integer size) {
-        validatePageRequest(page, size);
+    public NoticePageResponse getNotices(NoticePageRequest request) {
+        validatePageRequest(request);
         PageRequest pageRequest = PageRequest.of(
-            page,
-            size,
+            request.page(),
+            request.size(),
             Sort.by(Sort.Direction.DESC, "createdAt")
         );
         Page<Notice> noticePage = noticeRepository.findAll(pageRequest);
@@ -55,8 +55,8 @@ public class NoticeService {
         );
     }
 
-    private void validatePageRequest(Integer page, Integer size) {
-        if (page == null || page < 0 || size == null || size < 1 || size > MAX_PAGE_SIZE) {
+    private void validatePageRequest(NoticePageRequest request) {
+        if (request == null || request.page() < 0 || request.size() < 1 || request.size() > NoticePageRequest.MAX_SIZE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 요청 값이 올바르지 않습니다.");
         }
     }
