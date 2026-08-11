@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
+import org.example.server.statistics.domain.enums.StatisticsPeriod; // 변경: enum import
 import org.example.server.statistics.presentation.dto.req.StatisticsRequest;
 import org.example.server.statistics.presentation.dto.res.CalendarResponse;
 import org.example.server.statistics.presentation.dto.res.StatisticsResponse;
@@ -29,33 +30,46 @@ import org.springframework.transaction.annotation.Transactional;
 public class StatisticsService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
-    private static final List<String> VALID_PERIODS = List.of("today", "month", "all");
 
     private final UserRepository userRepository;
     private final FocusRecordRepository focusRecordRepository;
     private final TimerSettingRepository timerSettingRepository;
 
     @Transactional(readOnly = true)
-    public StatisticsResponse getStatistics(String userId, StatisticsRequest request) {
+    public StatisticsResponse getStatistics(
+        String userId,
+        StatisticsRequest request
+    ) {
         User user = findUserByUserIdOrThrow(userId);
         validateUserStatus(user.getUserStatus());
 
-        String resolvedPeriod = resolvePeriod(request.period());
-        List<FocusRecord> allRecords = findFocusRecordByUserIdOrNull(user.getId());
+        StatisticsPeriod resolvedPeriod = resolvePeriod(request.period());
+
+        List<FocusRecord> allRecords =
+            findFocusRecordByUserIdOrNull(user.getId());
+
         List<FocusRecord> filtered = filterByPeriod(allRecords, resolvedPeriod);
+
         int cycleCount = resolveCycleCount(user.getId());
 
         long totalFocusedSeconds = sumFocusedSeconds(filtered);
         long totalFocusedHours = totalFocusedSeconds / 3600;
         int completedCupCount = filtered.size();
-        int completedCycleCount = calculateTotalCompletedCycleCount(filtered, cycleCount);
 
-        List<LocalDate> achievedDatesAsc = calculateCycleAchievedDates(allRecords, cycleCount);
-        int currentStreakDays = calculateCurrentStreak(achievedDatesAsc);
-        int longestStreakDays = calculateLongestStreak(achievedDatesAsc);
+        int completedCycleCount =
+            calculateTotalCompletedCycleCount(filtered, cycleCount);
+
+        List<LocalDate> achievedDatesAsc =
+            calculateCycleAchievedDates(allRecords, cycleCount);
+
+        int currentStreakDays =
+            calculateCurrentStreak(achievedDatesAsc);
+
+        int longestStreakDays =
+            calculateLongestStreak(achievedDatesAsc);
 
         return StatisticsResponse.of(
-            resolvedPeriod,
+            resolvedPeriod.name().toLowerCase(),
             totalFocusedSeconds,
             totalFocusedHours,
             currentStreakDays,
@@ -66,7 +80,11 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
-    public CalendarResponse getCalendar(String userId, int year, int month) {
+    public CalendarResponse getCalendar(
+        String userId,
+        int year,
+        int month
+    ) {
         User user = findUserByUserIdOrThrow(userId);
         validateUserStatus(user.getUserStatus());
         validateYearMonth(year, month);
@@ -74,37 +92,77 @@ public class StatisticsService {
         int cycleCount = resolveCycleCount(user.getId());
         YearMonth yearMonth = YearMonth.of(year, month);
 
-        List<FocusRecord> records = focusRecordRepository.findAllByUserIdAndFocusedDateBetween(
-            user.getId(), yearMonth.atDay(1), yearMonth.atEndOfMonth()
-        );
+        List<FocusRecord> records =
+            focusRecordRepository
+                .findAllByUserIdAndFocusedDateBetween(
+                    user.getId(),
+                    yearMonth.atDay(1),
+                    yearMonth.atEndOfMonth()
+                );
 
-        Map<LocalDate, List<FocusRecord>> byDate = records.stream()
-            .collect(Collectors.groupingBy(FocusRecord::getFocusedDate));
+        Map<LocalDate, List<FocusRecord>> byDate =
+            records.stream()
+                .collect(
+                    Collectors.groupingBy(
+                        FocusRecord::getFocusedDate
+                    )
+                );
 
-        List<CalendarResponse.DayStat> days = byDate.entrySet().stream()
-            .map(entry -> toDayStat(entry.getKey(), entry.getValue(), cycleCount))
-            .sorted(Comparator.comparing(CalendarResponse.DayStat::date))
-            .toList();
+        List<CalendarResponse.DayStat> days =
+            byDate.entrySet().stream()
+                .map(entry ->
+                    toDayStat(
+                        entry.getKey(),
+                        entry.getValue(),
+                        cycleCount
+                    )
+                )
+                .sorted(
+                    Comparator.comparing(
+                        CalendarResponse.DayStat::date
+                    )
+                )
+                .toList();
 
         long totalFocusedSeconds = sumFocusedSeconds(records);
         int completedCupCount = records.size();
-        int completedCycleCount = calculateTotalCompletedCycleCount(records, cycleCount);
 
-        return new CalendarResponse(year, month, totalFocusedSeconds, completedCupCount, completedCycleCount, days);
+        int completedCycleCount =
+            calculateTotalCompletedCycleCount(records, cycleCount);
+
+        return new CalendarResponse(
+            year,
+            month,
+            totalFocusedSeconds,
+            completedCupCount,
+            completedCycleCount,
+            days
+        );
     }
 
     // =============== 조회 메서드 =============== //
+
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "유저를 찾을 수 없습니다."
+                )
+            );
     }
 
     private User findUserByIdOrThrow(Long userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "유저를 찾을 수 없습니다."
+                )
+            );
     }
 
-    private List<FocusRecord> findFocusRecordByUserIdOrNull(Long userId) {
+    private List<FocusRecord> findFocusRecordByUserIdOrNull(
+        Long userId
+    ) {
         return focusRecordRepository.findAllByUserId(userId);
     }
 
@@ -115,125 +173,217 @@ public class StatisticsService {
     }
 
     // =============== 검증 메서드 =============== //
+
     private void validateUserStatus(UserStatus userStatus) {
         if (!userStatus.equals(UserStatus.ACTIVE)) {
-            throw new IllegalArgumentException("비활성화된 유저입니다.");
+            throw new IllegalArgumentException(
+                "비활성화된 유저입니다."
+            );
         }
     }
 
-    private String resolvePeriod(String period) {
-        if (period == null || period.isBlank()) {
-            return "all";
-        }
-        if (!VALID_PERIODS.contains(period)) {
-            throw new IllegalArgumentException("올바르지 않은 period 값입니다.");
-        }
-        return period;
+    private StatisticsPeriod resolvePeriod(
+        StatisticsPeriod period
+    ) {
+        return period == null
+            ? StatisticsPeriod.ALL
+            : period;
     }
 
     private void validateYearMonth(int year, int month) {
         if (String.valueOf(year).length() != 4) {
-            throw new IllegalArgumentException("year는 4자리 정수여야 합니다.");
+            throw new IllegalArgumentException(
+                "year는 4자리 정수여야 합니다."
+            );
         }
+
         if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("month는 1~12 범위여야 합니다.");
+            throw new IllegalArgumentException(
+                "month는 1~12 범위여야 합니다."
+            );
         }
     }
 
     // =============== 계산 메서드 =============== //
-    private List<FocusRecord> filterByPeriod(List<FocusRecord> records, String period) {
+
+    private List<FocusRecord> filterByPeriod(
+        List<FocusRecord> records,
+        StatisticsPeriod period
+    ) {
         LocalDate today = LocalDate.now(ZONE);
+
         return switch (period) {
-            case "today" -> records.stream()
-                .filter(r -> r.getFocusedDate().equals(today))
+            case TODAY -> records.stream()
+                .filter(record ->
+                    record.getFocusedDate().equals(today)
+                )
                 .toList();
-            case "month" -> records.stream()
-                .filter(r -> YearMonth.from(r.getFocusedDate()).equals(YearMonth.from(today)))
-                .toList();
-            default -> records;
+
+            case MONTH -> {
+                YearMonth currentMonth = YearMonth.from(today);
+
+                yield records.stream()
+                    .filter(record ->
+                        YearMonth.from(record.getFocusedDate())
+                            .equals(currentMonth)
+                    )
+                    .toList();
+            }
+
+            case ALL -> records;
         };
     }
 
-    private long sumFocusedSeconds(List<FocusRecord> records) {
+    private long sumFocusedSeconds(
+        List<FocusRecord> records
+    ) {
         return records.stream()
             .mapToLong(FocusRecord::getFocusedSeconds)
             .sum();
     }
 
-    // 하루치 레코드 안에서의 완료 사이클 수 (toDayStat처럼 이미 날짜 단위로 쪼개진 리스트에만 사용)
-    private int calculateCompletedCycleCount(int completedCupCount, int cycleCount) {
-        return cycleCount > 0 ? completedCupCount / cycleCount : 0;
+
+    private int calculateCompletedCycleCount(
+        int completedCupCount,
+        int cycleCount
+    ) {
+        return cycleCount > 0
+            ? completedCupCount / cycleCount
+            : 0;
     }
 
-    // 여러 날짜가 섞인 기간(month/all) 합계는 날짜별로 나눠서 사이클을 구한 뒤 합산해야 한다.
-    // 예: cycleCount=4일 때 이틀에 걸쳐 2컵씩 마셨다면 총 4컵이어도 완료 사이클은 0이어야 한다.
-    private int calculateTotalCompletedCycleCount(List<FocusRecord> records, int cycleCount) {
+    private int calculateTotalCompletedCycleCount(
+        List<FocusRecord> records,
+        int cycleCount
+    ) {
         if (cycleCount <= 0) {
             return 0;
         }
-        Map<LocalDate, Long> countByDate = records.stream()
-            .collect(Collectors.groupingBy(FocusRecord::getFocusedDate, Collectors.counting()));
+
+        Map<LocalDate, Long> countByDate =
+            records.stream()
+                .collect(
+                    Collectors.groupingBy(
+                        FocusRecord::getFocusedDate,
+                        Collectors.counting()
+                    )
+                );
 
         return countByDate.values().stream()
-            .mapToInt(count -> (int) (count / cycleCount))
+            .mapToInt(count ->
+                (int) (count / cycleCount)
+            )
             .sum();
     }
 
-    private CalendarResponse.DayStat toDayStat(LocalDate date, List<FocusRecord> dayRecords, int cycleCount) {
+    private CalendarResponse.DayStat toDayStat(
+        LocalDate date,
+        List<FocusRecord> dayRecords,
+        int cycleCount
+    ) {
         long focusedSeconds = sumFocusedSeconds(dayRecords);
         int completedCupCount = dayRecords.size();
-        int completedCycleCount = calculateCompletedCycleCount(completedCupCount, cycleCount);
+
+        int completedCycleCount =
+            calculateCompletedCycleCount(
+                completedCupCount,
+                cycleCount
+            );
 
         return new CalendarResponse.DayStat(
-            date, focusedSeconds, completedCupCount, completedCycleCount, completedCycleCount >= 1
+            date,
+            focusedSeconds,
+            completedCupCount,
+            completedCycleCount,
+            completedCycleCount >= 1
         );
     }
 
-    private List<LocalDate> calculateCycleAchievedDates(List<FocusRecord> records, int cycleCount) {
+    private List<LocalDate> calculateCycleAchievedDates(
+        List<FocusRecord> records,
+        int cycleCount
+    ) {
         if (cycleCount <= 0) {
             return List.of();
         }
-        Map<LocalDate, Long> countByDate = records.stream()
-            .collect(Collectors.groupingBy(FocusRecord::getFocusedDate, Collectors.counting()));
+
+        Map<LocalDate, Long> countByDate =
+            records.stream()
+                .collect(
+                    Collectors.groupingBy(
+                        FocusRecord::getFocusedDate,
+                        Collectors.counting()
+                    )
+                );
 
         return countByDate.entrySet().stream()
-            .filter(entry -> entry.getValue() / cycleCount >= 1)
+            .filter(entry ->
+                entry.getValue() / cycleCount >= 1
+            )
             .map(Map.Entry::getKey)
             .sorted()
             .toList();
     }
 
-    private int calculateCurrentStreak(List<LocalDate> achievedDatesAsc) {
+    private int calculateCurrentStreak(
+        List<LocalDate> achievedDatesAsc
+    ) {
         if (achievedDatesAsc.isEmpty()) {
             return 0;
         }
+
         LocalDate today = LocalDate.now(ZONE);
-        LocalDate mostRecent = achievedDatesAsc.get(achievedDatesAsc.size() - 1);
-        if (!mostRecent.equals(today) && !mostRecent.equals(today.minusDays(1))) {
+
+        LocalDate mostRecent =
+            achievedDatesAsc.get(
+                achievedDatesAsc.size() - 1
+            );
+
+        if (
+            !mostRecent.equals(today)
+                && !mostRecent.equals(today.minusDays(1))
+        ) {
             return 0;
         }
 
-        Set<LocalDate> dateSet = new HashSet<>(achievedDatesAsc);
+        Set<LocalDate> dateSet =
+            new HashSet<>(achievedDatesAsc);
+
         int streak = 0;
         LocalDate cursor = mostRecent;
+
         while (dateSet.contains(cursor)) {
             streak++;
             cursor = cursor.minusDays(1);
         }
+
         return streak;
     }
 
-    private int calculateLongestStreak(List<LocalDate> achievedDatesAsc) {
+    private int calculateLongestStreak(
+        List<LocalDate> achievedDatesAsc
+    ) {
         if (achievedDatesAsc.isEmpty()) {
             return 0;
         }
+
         int longest = 1;
         int current = 1;
+
         for (int i = 1; i < achievedDatesAsc.size(); i++) {
-            boolean consecutive = ChronoUnit.DAYS.between(achievedDatesAsc.get(i - 1), achievedDatesAsc.get(i)) == 1;
-            current = consecutive ? current + 1 : 1;
+            boolean consecutive =
+                ChronoUnit.DAYS.between(
+                    achievedDatesAsc.get(i - 1),
+                    achievedDatesAsc.get(i)
+                ) == 1;
+
+            current = consecutive
+                ? current + 1
+                : 1;
+
             longest = Math.max(longest, current);
         }
+
         return longest;
     }
 }
