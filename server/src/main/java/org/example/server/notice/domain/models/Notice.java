@@ -19,6 +19,8 @@ import org.example.server.common.entity.BaseEntity;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notice extends BaseEntity {
 
+    public static final int MAX_TITLE_LENGTH = 100;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,7 +29,7 @@ public class Notice extends BaseEntity {
     @Column(name = "admin_id", nullable = false)
     private Long adminId;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = MAX_TITLE_LENGTH)
     private String title;
 
     @Lob

@@ -20,8 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class AdminNoticeService {
 
-    private static final int MAX_TITLE_LENGTH = 100;
-
     private final NoticeRepository noticeRepository;
     private final UserRepository userRepository;
 
@@ -97,7 +95,7 @@ public class AdminNoticeService {
 
     private String validateTitle(String title) {
         String trimmedTitle = trim(title);
-        if (trimmedTitle.isEmpty() || trimmedTitle.length() > MAX_TITLE_LENGTH) {
+        if (trimmedTitle.isEmpty() || trimmedTitle.length() > Notice.MAX_TITLE_LENGTH) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 제목이 올바르지 않습니다.");
         }
         return trimmedTitle;
