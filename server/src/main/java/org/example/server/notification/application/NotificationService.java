@@ -17,8 +17,10 @@ import org.example.server.notification.presentation.dto.res.NotificationSettingR
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +72,7 @@ public class NotificationService {
         validateUpsertDeviceTokenRequest(request);
 
         String token = validateAndNormalizeToken(request.token());
-        DeviceType platform = DeviceType.from(request.platform());
+        DeviceType platform = parsePlatform(request.platform());
         LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
 
         DeviceToken deviceToken = deviceTokenRepository.findByToken(token)
@@ -97,12 +99,12 @@ public class NotificationService {
 
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
     }
 
     private void validateUserStatus(User user) {
         if (!user.getUserStatus().equals(UserStatus.ACTIVE)) {
-            throw new IllegalArgumentException("비활성 유저입니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "비활성 유저입니다.");
         }
     }
 
@@ -111,32 +113,40 @@ public class NotificationService {
             || request.focusStartEnabled() == null
             || request.focusEndEnabled() == null
             || request.breakEndEnabled() == null) {
-            throw new IllegalArgumentException("알림 설정이 올바르지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "알림 설정이 올바르지 않습니다.");
         }
     }
 
     private void validateUpsertDeviceTokenRequest(UpsertDeviceTokenRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
         }
     }
 
     private void validateDeleteDeviceTokenRequest(DeleteDeviceTokenRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
         }
     }
 
     private String validateAndNormalizeToken(String token) {
         if (token == null) {
-            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
         }
 
         String normalizedToken = token.trim();
         if (normalizedToken.isEmpty() || normalizedToken.length() > MAX_DEVICE_TOKEN_LENGTH) {
-            throw new IllegalArgumentException("기기 토큰이 올바르지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
         }
         return normalizedToken;
+    }
+
+    private DeviceType parsePlatform(String platform) {
+        try {
+            return DeviceType.from(platform);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+        }
     }
 
     private OffsetDateTime toSeoulOffsetDateTime(LocalDateTime dateTime) {
