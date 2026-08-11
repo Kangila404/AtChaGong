@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.example.server.notice.domain.enums.NoticeStatus;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
 import org.example.server.notice.presentation.dto.req.NoticePageRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class NoticeService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+    private static final int NEW_BADGE_DAYS = 7;
 
     private final NoticeRepository noticeRepository;
 
@@ -35,9 +37,13 @@ public class NoticeService {
             request.size(),
             Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        Page<Notice> noticePage = noticeRepository.findAll(pageRequest);
+        Page<Notice> noticePage = noticeRepository.findByStatus(NoticeStatus.PUBLISHED, pageRequest);
         List<NoticeSummaryResponse> content = noticePage.getContent().stream()
-            .map(notice -> NoticeSummaryResponse.of(notice, toSeoulOffsetDateTime(notice.getCreatedAt())))
+            .map(notice -> NoticeSummaryResponse.of(
+                notice,
+                isNew(notice),
+                toSeoulOffsetDateTime(notice.getCreatedAt())
+            ))
             .toList();
         return NoticePageResponse.of(noticePage, content);
     }
@@ -45,11 +51,12 @@ public class NoticeService {
     @Transactional(readOnly = true)
     public NoticeDetailResponse getNotice(Long noticeId) {
         validateNoticeId(noticeId);
-        Notice notice = noticeRepository.findById(noticeId)
+        Notice notice = noticeRepository.findByIdAndStatus(noticeId, NoticeStatus.PUBLISHED)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."));
 
         return NoticeDetailResponse.of(
             notice,
+            isNew(notice),
             toSeoulOffsetDateTime(notice.getCreatedAt()),
             toSeoulOffsetDateTime(notice.getUpdatedAt())
         );
@@ -69,5 +76,10 @@ public class NoticeService {
 
     private OffsetDateTime toSeoulOffsetDateTime(LocalDateTime dateTime) {
         return dateTime.atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+
+    private boolean isNew(Notice notice) {
+        LocalDateTime newBadgeEndsAt = notice.getPublishStartsAt().plusDays(NEW_BADGE_DAYS);
+        return !LocalDateTime.now(SEOUL_ZONE).isAfter(newBadgeEndsAt);
     }
 }

@@ -8,12 +8,14 @@ import org.example.server.notice.domain.models.Notice;
 public record NoticeSummaryResponse(
     Long noticeId,
     String title,
+    boolean isNew,
     OffsetDateTime createdAt
 ) {
-    public static NoticeSummaryResponse of(Notice notice, OffsetDateTime createdAt) {
+    public static NoticeSummaryResponse of(Notice notice, boolean isNew, OffsetDateTime createdAt) {
         return NoticeSummaryResponse.builder()
             .noticeId(notice.getId())
             .title(notice.getTitle())
+            .isNew(isNew)
             .createdAt(createdAt)
             .build();
     }

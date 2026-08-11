@@ -5,28 +5,30 @@ import lombok.Builder;
 import org.example.server.notice.domain.models.Notice;
 
 @Builder
-public record NoticeUpdateResponse(
+public record AdminNoticeSummaryResponse(
     Long noticeId,
     String title,
-    String content,
-    String imgUrl,
     String status,
     OffsetDateTime publishStartsAt,
-    OffsetDateTime publishEndsAt
+    OffsetDateTime publishEndsAt,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
 ) {
-    public static NoticeUpdateResponse of(
+    public static AdminNoticeSummaryResponse of(
         Notice notice,
         OffsetDateTime publishStartsAt,
-        OffsetDateTime publishEndsAt
+        OffsetDateTime publishEndsAt,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
     ) {
-        return NoticeUpdateResponse.builder()
+        return AdminNoticeSummaryResponse.builder()
             .noticeId(notice.getId())
             .title(notice.getTitle())
-            .content(notice.getContent())
-            .imgUrl(notice.getImgUrl())
             .status(notice.getStatus().value())
             .publishStartsAt(publishStartsAt)
             .publishEndsAt(publishEndsAt)
+            .createdAt(createdAt)
+            .updatedAt(updatedAt)
             .build();
     }
 }
