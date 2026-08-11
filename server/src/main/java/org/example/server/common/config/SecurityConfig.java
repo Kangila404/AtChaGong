@@ -31,7 +31,7 @@ public class SecurityConfig {
                     "/v3/api-docs",
                     "/v3/api-docs/**"
                 ).permitAll() // 스웨거 통과
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/dev/**").permitAll()
                 .requestMatchers("/error").permitAll()

@@ -8,7 +8,6 @@ public class AtchagongException extends RuntimeException {
     private final HttpStatus status;
     private final String message;
 
-
     public AtchagongException(HttpStatus status, String message)
     {
         super(message);
