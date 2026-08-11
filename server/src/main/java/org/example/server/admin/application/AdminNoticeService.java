@@ -27,10 +27,9 @@ public class AdminNoticeService {
     public NoticeCreateResponse createNotice(String userId, NoticeCreateRequest request) {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
-        String title = validateTitle(request == null ? null : request.title());
-        String content = validateContent(request == null ? null : request.content());
+        NoticeFields fields = validateCreateRequest(request);
 
-        Notice notice = Notice.create(admin.getId(), title, content);
+        Notice notice = Notice.create(admin.getId(), fields.title(), fields.content());
         Notice savedNotice = noticeRepository.save(notice);
         return NoticeCreateResponse.from(savedNotice);
     }
@@ -40,19 +39,10 @@ public class AdminNoticeService {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
         validateNoticeId(noticeId);
-        validateHasUpdatableField(request);
-
-        String title = null;
-        String content = null;
-        if (request.title() != null) {
-            title = validateTitle(request.title());
-        }
-        if (request.content() != null) {
-            content = validateContent(request.content());
-        }
+        NoticeFields fields = validateUpdateRequest(request);
 
         Notice notice = findNoticeByIdOrThrow(noticeId);
-        notice.update(title, content);
+        notice.update(fields.title(), fields.content());
         return NoticeUpdateResponse.from(notice);
     }
 
@@ -87,6 +77,25 @@ public class AdminNoticeService {
         }
     }
 
+    private NoticeFields validateCreateRequest(NoticeCreateRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 요청 값이 올바르지 않습니다.");
+        }
+        return new NoticeFields(
+            validateTitle(request.title()),
+            validateContent(request.content())
+        );
+    }
+
+    private NoticeFields validateUpdateRequest(NoticeUpdateRequest request) {
+        validateHasUpdatableField(request);
+
+        String title = request.title() == null ? null : validateTitle(request.title());
+        String content = request.content() == null ? null : validateContent(request.content());
+
+        return new NoticeFields(title, content);
+    }
+
     private void validateHasUpdatableField(NoticeUpdateRequest request) {
         if (request == null || (request.title() == null && request.content() == null)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수정할 공지 필드가 없습니다.");
@@ -111,5 +120,11 @@ public class AdminNoticeService {
 
     private String trim(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private record NoticeFields(
+        String title,
+        String content
+    ) {
     }
 }

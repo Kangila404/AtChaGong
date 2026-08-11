@@ -1,6 +1,7 @@
 package org.example.server.admin.presentation.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.admin.application.AdminNoticeService;
 import org.example.server.admin.presentation.dto.req.NoticeCreateRequest;
@@ -30,7 +31,7 @@ public class AdminNoticeController {
     @PostMapping
     public ResponseEntity<ApiResponse<NoticeCreateResponse>> createNotice(
         @AuthenticationPrincipal String userId,
-        @RequestBody NoticeCreateRequest request
+        @Valid @RequestBody NoticeCreateRequest request
     ) {
         NoticeCreateResponse response = adminNoticeService.createNotice(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
@@ -40,7 +41,7 @@ public class AdminNoticeController {
     public ResponseEntity<ApiResponse<NoticeUpdateResponse>> updateNotice(
         @AuthenticationPrincipal String userId,
         @PathVariable Long noticeId,
-        @RequestBody NoticeUpdateRequest request
+        @Valid @RequestBody NoticeUpdateRequest request
     ) {
         NoticeUpdateResponse response = adminNoticeService.updateNotice(userId, noticeId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
