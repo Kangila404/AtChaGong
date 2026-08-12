@@ -34,8 +34,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs",
                     "/v3/api-docs/**"
-                ).permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                ).permitAll() // 스웨거 통과
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/dev/**").permitAll()
                 .requestMatchers("/error").permitAll()
