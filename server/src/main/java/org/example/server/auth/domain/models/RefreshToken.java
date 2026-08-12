@@ -48,5 +48,9 @@ public class RefreshToken extends BaseEntity {
     public void updateToken(String refreshToken, LocalDateTime expiredAt){
         this.tokenHash = refreshToken;
         this.expiredAt = expiredAt;
+        this.revokedAt = null;
+    }
+    // 3. 리프레시 토큰 폐기 확인
+    public boolean isRevoked() {return revokedAt != null;
     }
 }

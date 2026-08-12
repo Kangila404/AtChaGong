@@ -1,6 +1,8 @@
 package org.example.server.common.config;
 
 import lombok.RequiredArgsConstructor;
+import org.example.server.auth.infrastructure.jwt.JwtAccessDeniedHandler;
+import org.example.server.auth.infrastructure.jwt.JwtAuthenticationEntryPoint;
 import org.example.server.auth.infrastructure.jwt.JwtFilter;
 import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -24,7 +28,7 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()  // 로그인, 회원가입은 토큰 없이 허용
+                .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers(
                     "/swagger-ui.html",
                     "/swagger-ui/**",
@@ -35,9 +39,13 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/dev/**").permitAll()
                 .requestMatchers("/error").permitAll()
-                .anyRequest().authenticated()                // 나머지 토큰
+                .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtFilter(jwtTokenProvider),  // JwtFilter 등록
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)  // 인증 자체가 안 됨 → 401
+                .accessDeniedHandler(jwtAccessDeniedHandler)            // 인증은 됐는데 권한 없음(hasRole 등) → 403
+            )
+            .addFilterBefore(new JwtFilter(jwtTokenProvider),
                 UsernamePasswordAuthenticationFilter.class)
             .build();
     }
