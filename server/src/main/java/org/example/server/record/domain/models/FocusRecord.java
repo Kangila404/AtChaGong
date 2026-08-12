@@ -53,6 +53,9 @@ public class FocusRecord extends BaseEntity {
     @Column(name = "focused_date", nullable = false)
     private LocalDate focusedDate;
 
+    @Column(name = "cycle_count", nullable = false)
+    private int cycleCount;
+
     @Builder(access = AccessLevel.PRIVATE)
     private FocusRecord(
         Long userId,
@@ -61,7 +64,8 @@ public class FocusRecord extends BaseEntity {
         int focusedSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
-        LocalDate focusedDate
+        LocalDate focusedDate,
+        int cycleCount
     ) {
         this.userId = userId;
         this.beverage = beverage;
@@ -70,6 +74,7 @@ public class FocusRecord extends BaseEntity {
         this.startedAt = startedAt;
         this.completedAt = completedAt;
         this.focusedDate = focusedDate;
+        this.cycleCount = cycleCount;
     }
 
     public static FocusRecord create(
@@ -78,7 +83,8 @@ public class FocusRecord extends BaseEntity {
         int focusMinutes,
         int focusedSeconds,
         LocalDateTime startedAt,
-        LocalDateTime completedAt
+        LocalDateTime completedAt,
+        int cycleCount
     ) {
         return FocusRecord.builder()
             .userId(userId)
@@ -88,6 +94,7 @@ public class FocusRecord extends BaseEntity {
             .startedAt(startedAt)
             .completedAt(completedAt)
             .focusedDate(completedAt.toLocalDate())
+            .cycleCount(cycleCount)
             .build();
     }
 }
