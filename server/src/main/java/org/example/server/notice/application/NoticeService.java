@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.server.notice.domain.enums.NoticeStatus;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
+import org.example.server.notice.exception.NoticeErrorCode;
+import org.example.server.notice.exception.NoticeException;
 import org.example.server.notice.presentation.dto.req.NoticePageRequest;
 import org.example.server.notice.presentation.dto.res.NoticeDetailResponse;
 import org.example.server.notice.presentation.dto.res.NoticePageResponse;
@@ -15,10 +17,8 @@ import org.example.server.notice.presentation.dto.res.NoticeSummaryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +31,10 @@ public class NoticeService {
 
     @Transactional(readOnly = true)
     public NoticePageResponse getNotices(NoticePageRequest request) {
-        validatePageRequest(request);
+        PageValues pageValues = parsePageRequest(request);
         PageRequest pageRequest = PageRequest.of(
-            request.page(),
-            request.size(),
+            pageValues.page(),
+            pageValues.size(),
             Sort.by(Sort.Direction.DESC, "createdAt")
         );
         Page<Notice> noticePage = noticeRepository.findByStatus(NoticeStatus.PUBLISHED, pageRequest);
@@ -49,10 +49,10 @@ public class NoticeService {
     }
 
     @Transactional(readOnly = true)
-    public NoticeDetailResponse getNotice(Long noticeId) {
-        validateNoticeId(noticeId);
-        Notice notice = noticeRepository.findByIdAndStatus(noticeId, NoticeStatus.PUBLISHED)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."));
+    public NoticeDetailResponse getNotice(String noticeId) {
+        Long parsedNoticeId = parseNoticeId(noticeId);
+        Notice notice = noticeRepository.findByIdAndStatus(parsedNoticeId, NoticeStatus.PUBLISHED)
+            .orElseThrow(() -> new NoticeException(NoticeErrorCode.NOTICE_NOT_FOUND));
 
         return NoticeDetailResponse.of(
             notice,
@@ -62,16 +62,47 @@ public class NoticeService {
         );
     }
 
-    private void validatePageRequest(NoticePageRequest request) {
-        if (request == null || request.page() < 0 || request.size() < 1 || request.size() > NoticePageRequest.MAX_SIZE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 요청 값이 올바르지 않습니다.");
+    private PageValues parsePageRequest(NoticePageRequest request) {
+        if (request == null) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
+        }
+
+        int page = parsePageValue(request.page(), NoticePageRequest.DEFAULT_PAGE);
+        int size = parsePageValue(request.size(), NoticePageRequest.DEFAULT_SIZE);
+        if (page < 0 || size < 1 || size > NoticePageRequest.MAX_SIZE) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
+        }
+        return new PageValues(page, size);
+    }
+
+    private int parsePageValue(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException exception) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
         }
     }
 
-    private void validateNoticeId(Long noticeId) {
-        if (noticeId == null || noticeId < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 ID가 올바르지 않습니다.");
+    private Long parseNoticeId(String noticeId) {
+        if (noticeId == null || !noticeId.matches("\\d+")) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
         }
+
+        Long parsedNoticeId;
+        try {
+            parsedNoticeId = Long.parseLong(noticeId);
+        } catch (NumberFormatException exception) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
+        }
+
+        if (parsedNoticeId < 1) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
+        }
+        return parsedNoticeId;
     }
 
     private OffsetDateTime toSeoulOffsetDateTime(LocalDateTime dateTime) {
@@ -81,5 +112,8 @@ public class NoticeService {
     private boolean isNew(Notice notice) {
         LocalDateTime newBadgeEndsAt = notice.getPublishStartsAt().plusDays(NEW_BADGE_DAYS);
         return !LocalDateTime.now(SEOUL_ZONE).isAfter(newBadgeEndsAt);
+    }
+
+    private record PageValues(int page, int size) {
     }
 }

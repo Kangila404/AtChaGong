@@ -13,20 +13,24 @@ import org.example.server.admin.presentation.dto.res.AdminNoticePageResponse;
 import org.example.server.admin.presentation.dto.res.AdminNoticeSummaryResponse;
 import org.example.server.admin.presentation.dto.res.NoticeCreateResponse;
 import org.example.server.admin.presentation.dto.res.NoticeUpdateResponse;
+import org.example.server.common.exception.AtchagongException;
+import org.example.server.common.exception.CommonErrorCode;
 import org.example.server.notice.domain.enums.NoticeStatus;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
+import org.example.server.notice.exception.NoticeErrorCode;
+import org.example.server.notice.exception.NoticeException;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,7 @@ public class AdminNoticeService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final int NEW_BADGE_DAYS = 7;
+    private static final int MAX_IMG_URL_LENGTH = 512;
 
     private final NoticeRepository noticeRepository;
     private final UserRepository userRepository;
@@ -42,16 +47,16 @@ public class AdminNoticeService {
     public AdminNoticePageResponse getNotices(String userId, AdminNoticePageRequest request) {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
-        validateAdminNoticePageRequest(request);
+        PageValues pageValues = parseAdminNoticePageRequest(request);
 
         PageRequest pageRequest = PageRequest.of(
-            request.page(),
-            request.size(),
+            pageValues.page(),
+            pageValues.size(),
             Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        Page<Notice> noticePage = isAllStatus(request.status())
+        Page<Notice> noticePage = pageValues.status() == null
             ? noticeRepository.findAll(pageRequest)
-            : noticeRepository.findByStatus(NoticeStatus.from(request.status()), pageRequest);
+            : noticeRepository.findByStatus(pageValues.status(), pageRequest);
 
         List<AdminNoticeSummaryResponse> content = noticePage.getContent().stream()
             .map(notice -> AdminNoticeSummaryResponse.of(
@@ -67,12 +72,12 @@ public class AdminNoticeService {
     }
 
     @Transactional(readOnly = true)
-    public AdminNoticeDetailResponse getNotice(String userId, Long noticeId) {
+    public AdminNoticeDetailResponse getNotice(String userId, String noticeId) {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
-        validateNoticeId(noticeId);
+        Long parsedNoticeId = parseNoticeId(noticeId);
 
-        Notice notice = findNoticeByIdOrThrow(noticeId);
+        Notice notice = findNoticeByIdOrThrow(parsedNoticeId);
         return AdminNoticeDetailResponse.of(
             notice,
             isNew(notice),
@@ -103,13 +108,13 @@ public class AdminNoticeService {
     }
 
     @Transactional
-    public NoticeUpdateResponse updateNotice(String userId, Long noticeId, NoticeUpdateRequest request) {
+    public NoticeUpdateResponse updateNotice(String userId, String noticeId, NoticeUpdateRequest request) {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
-        validateNoticeId(noticeId);
+        Long parsedNoticeId = parseNoticeId(noticeId);
         NoticeFields fields = validateUpdateRequest(request);
 
-        Notice notice = findNoticeByIdOrThrow(noticeId);
+        Notice notice = findNoticeByIdOrThrow(parsedNoticeId);
         notice.update(
             fields.title(),
             fields.content(),
@@ -126,53 +131,83 @@ public class AdminNoticeService {
     }
 
     @Transactional
-    public void deleteNotice(String userId, Long noticeId) {
+    public void deleteNotice(String userId, String noticeId) {
         User admin = findUserByUserIdOrThrow(userId);
         validateAdminUser(admin);
-        validateNoticeId(noticeId);
-        Notice notice = findNoticeByIdOrThrow(noticeId);
+        Long parsedNoticeId = parseNoticeId(noticeId);
+        Notice notice = findNoticeByIdOrThrow(parsedNoticeId);
         noticeRepository.delete(notice);
     }
 
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+            .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
 
     private Notice findNoticeByIdOrThrow(Long noticeId) {
         return noticeRepository.findById(noticeId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."));
+            .orElseThrow(() -> new NoticeException(NoticeErrorCode.NOTICE_NOT_FOUND));
     }
 
-    private void validateNoticeId(Long noticeId) {
-        if (noticeId == null || noticeId < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 ID가 올바르지 않습니다.");
+    private Long parseNoticeId(String noticeId) {
+        if (noticeId == null || !noticeId.matches("\\d+")) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
         }
+
+        Long parsedNoticeId;
+        try {
+            parsedNoticeId = Long.parseLong(noticeId);
+        } catch (NumberFormatException exception) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
+        }
+
+        if (parsedNoticeId < 1) {
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_ID);
+        }
+        return parsedNoticeId;
     }
 
     private void validateAdminUser(User user) {
         if (user.getUserStatus() != UserStatus.ACTIVE || user.getUserRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+            throw new AtchagongException(CommonErrorCode.FORBIDDEN);
         }
     }
 
-    private void validateAdminNoticePageRequest(AdminNoticePageRequest request) {
-        if (request == null || request.page() < 0 || request.size() < 1 || request.size() > AdminNoticePageRequest.MAX_SIZE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 요청 값이 올바르지 않습니다.");
+    private PageValues parseAdminNoticePageRequest(AdminNoticePageRequest request) {
+        if (request == null) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
         }
-        if (!isAllStatus(request.status())) {
-            parseStatus(request.status());
+
+        int page = parsePageValue(request.page(), AdminNoticePageRequest.DEFAULT_PAGE);
+        int size = parsePageValue(request.size(), AdminNoticePageRequest.DEFAULT_SIZE);
+        if (page < 0 || size < 1 || size > AdminNoticePageRequest.MAX_SIZE) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
+        }
+
+        NoticeStatus status = isAllStatus(request.status()) ? null : parseStatus(request.status());
+        return new PageValues(page, size, status);
+    }
+
+    private int parsePageValue(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException exception) {
+            throw new NoticeException(NoticeErrorCode.INVALID_PAGE_REQUEST);
         }
     }
 
     private NoticeFields validateCreateRequest(NoticeCreateRequest request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 요청 값이 올바르지 않습니다.");
+            throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
         }
         return new NoticeFields(
             validateTitle(request.title()),
             validateContent(request.content()),
-            request.imgUrl(),
+            validateImgUrl(request.imgUrl()),
             parseStatus(request.status()),
             defaultPublishStartsAt(request.publishStartsAt()),
             toNullableSeoulLocalDateTime(request.publishEndsAt())
@@ -184,6 +219,7 @@ public class AdminNoticeService {
 
         String title = request.title() == null ? null : validateTitle(request.title());
         String content = request.content() == null ? null : validateContent(request.content());
+        String imgUrl = request.imgUrl() == null ? null : validateImgUrl(request.imgUrl());
         NoticeStatus status = request.status() == null ? null : parseStatus(request.status());
         LocalDateTime publishStartsAt = toNullableSeoulLocalDateTime(request.publishStartsAt());
         LocalDateTime publishEndsAt = toNullableSeoulLocalDateTime(request.publishEndsAt());
@@ -191,7 +227,7 @@ public class AdminNoticeService {
         return new NoticeFields(
             title,
             content,
-            request.imgUrl(),
+            imgUrl,
             status,
             publishStartsAt,
             publishEndsAt
@@ -206,14 +242,14 @@ public class AdminNoticeService {
                 && request.status() == null
                 && request.publishStartsAt() == null
                 && request.publishEndsAt() == null)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수정할 공지 필드가 없습니다.");
+            throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
         }
     }
 
     private String validateTitle(String title) {
         String trimmedTitle = trim(title);
         if (trimmedTitle.isEmpty() || trimmedTitle.length() > Notice.MAX_TITLE_LENGTH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 제목이 올바르지 않습니다.");
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_TITLE);
         }
         return trimmedTitle;
     }
@@ -221,9 +257,16 @@ public class AdminNoticeService {
     private String validateContent(String content) {
         String trimmedContent = trim(content);
         if (trimmedContent.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "공지 내용이 올바르지 않습니다.");
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_CONTENT);
         }
         return trimmedContent;
+    }
+
+    private String validateImgUrl(String imgUrl) {
+        if (imgUrl == null || imgUrl.length() <= MAX_IMG_URL_LENGTH) {
+            return imgUrl;
+        }
+        throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
     }
 
     private String trim(String value) {
@@ -234,7 +277,7 @@ public class AdminNoticeService {
         try {
             return NoticeStatus.from(status);
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+            throw new NoticeException(NoticeErrorCode.INVALID_NOTICE_STATUS);
         }
     }
 
@@ -278,5 +321,8 @@ public class AdminNoticeService {
         LocalDateTime publishStartsAt,
         LocalDateTime publishEndsAt
     ) {
+    }
+
+    private record PageValues(int page, int size, NoticeStatus status) {
     }
 }

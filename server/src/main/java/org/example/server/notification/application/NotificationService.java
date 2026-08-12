@@ -9,6 +9,8 @@ import org.example.server.notification.domain.models.DeviceToken;
 import org.example.server.notification.domain.models.NotificationSetting;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
+import org.example.server.notification.exception.NotificationErrorCode;
+import org.example.server.notification.exception.NotificationException;
 import org.example.server.notification.presentation.dto.req.DeleteDeviceTokenRequest;
 import org.example.server.notification.presentation.dto.req.UpdateNotificationSettingRequest;
 import org.example.server.notification.presentation.dto.req.UpsertDeviceTokenRequest;
@@ -17,10 +19,10 @@ import org.example.server.notification.presentation.dto.res.NotificationSettingR
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
-import org.springframework.http.HttpStatus;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -99,12 +101,14 @@ public class NotificationService {
 
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+            .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
 
     private void validateUserStatus(User user) {
-        if (!user.getUserStatus().equals(UserStatus.ACTIVE)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "비활성 유저입니다.");
+        switch (user.getUserStatus()) {
+            case WITHDRAWN -> throw new UserException(UserErrorCode.WITHDRAWN_USER);
+            case SUSPENDED -> throw new UserException(UserErrorCode.SUSPENDED_USER);
+            case ACTIVE -> { }
         }
     }
 
@@ -113,30 +117,30 @@ public class NotificationService {
             || request.focusStartEnabled() == null
             || request.focusEndEnabled() == null
             || request.breakEndEnabled() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "알림 설정이 올바르지 않습니다.");
+            throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_SETTING);
         }
     }
 
     private void validateUpsertDeviceTokenRequest(UpsertDeviceTokenRequest request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
+            throw new NotificationException(NotificationErrorCode.INVALID_DEVICE_TOKEN);
         }
     }
 
     private void validateDeleteDeviceTokenRequest(DeleteDeviceTokenRequest request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
+            throw new NotificationException(NotificationErrorCode.INVALID_DEVICE_TOKEN);
         }
     }
 
     private String validateAndNormalizeToken(String token) {
         if (token == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
+            throw new NotificationException(NotificationErrorCode.INVALID_DEVICE_TOKEN);
         }
 
         String normalizedToken = token.trim();
         if (normalizedToken.isEmpty() || normalizedToken.length() > MAX_DEVICE_TOKEN_LENGTH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기기 토큰이 올바르지 않습니다.");
+            throw new NotificationException(NotificationErrorCode.INVALID_DEVICE_TOKEN);
         }
         return normalizedToken;
     }
@@ -145,7 +149,7 @@ public class NotificationService {
         try {
             return DeviceType.from(platform);
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
+            throw new NotificationException(NotificationErrorCode.INVALID_PLATFORM);
         }
     }
 

@@ -2,7 +2,6 @@ package org.example.server.notification.presentation.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.notification.application.NotificationService;
@@ -41,7 +40,7 @@ public class NotificationController {
     @Operation(summary = "알림 설정 수정")
     public ResponseEntity<ApiResponse<NotificationSettingResponse>> updateNotificationSetting(
         @AuthenticationPrincipal String userId,
-        @Valid @RequestBody UpdateNotificationSettingRequest request
+        @RequestBody(required = false) UpdateNotificationSettingRequest request
     ) {
         NotificationSettingResponse response = notificationService.updateNotificationSetting(userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -51,7 +50,7 @@ public class NotificationController {
     @Operation(summary = "기기 토큰 등록 또는 갱신")
     public ResponseEntity<ApiResponse<DeviceTokenResponse>> upsertDeviceToken(
         @AuthenticationPrincipal String userId,
-        @Valid @RequestBody UpsertDeviceTokenRequest request
+        @RequestBody(required = false) UpsertDeviceTokenRequest request
     ) {
         DeviceTokenResponse response = notificationService.upsertDeviceToken(userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -61,7 +60,7 @@ public class NotificationController {
     @Operation(summary = "기기 토큰 비활성화")
     public ResponseEntity<Void> deactivateDeviceToken(
         @AuthenticationPrincipal String userId,
-        @Valid @RequestBody DeleteDeviceTokenRequest request
+        @RequestBody(required = false) DeleteDeviceTokenRequest request
     ) {
         notificationService.deactivateDeviceToken(userId, request);
         return ResponseEntity.noContent().build();

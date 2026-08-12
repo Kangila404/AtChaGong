@@ -2,7 +2,6 @@ package org.example.server.notice.presentation.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.notice.application.NoticeService;
@@ -27,7 +26,7 @@ public class NoticeController {
     @GetMapping
     @Operation(summary = "공지 목록 조회")
     public ResponseEntity<ApiResponse<NoticePageResponse>> getNotices(
-        @Valid @ModelAttribute NoticePageRequest request
+        @ModelAttribute NoticePageRequest request
     ) {
         NoticePageResponse response = noticeService.getNotices(request);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -35,7 +34,7 @@ public class NoticeController {
 
     @GetMapping("/{noticeId}")
     @Operation(summary = "공지 상세 조회")
-    public ResponseEntity<ApiResponse<NoticeDetailResponse>> getNotice(@PathVariable Long noticeId) {
+    public ResponseEntity<ApiResponse<NoticeDetailResponse>> getNotice(@PathVariable String noticeId) {
         NoticeDetailResponse response = noticeService.getNotice(noticeId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
