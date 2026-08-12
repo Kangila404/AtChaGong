@@ -9,6 +9,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
@@ -204,15 +206,17 @@ public class FocusRecordService {
     }
 
     private int calculateCompletedCycleCount(List<FocusRecord> focusRecords) {
-        if (focusRecords.isEmpty()) {
-            return 0;
-        }
+        Map<Integer, Long> countByCycleCount = focusRecords.stream()
+            .collect(Collectors.groupingBy(FocusRecord::getCycleCount, Collectors.counting()));
 
-        int cycleCount = focusRecords.get(0).getCycleCount();
-        if (cycleCount < 1) {
-            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
-        }
-
-        return focusRecords.size() / cycleCount;
+        return countByCycleCount.entrySet().stream()
+            .mapToInt(entry -> {
+                int cycleCount = entry.getKey();
+                if (cycleCount < 1) {
+                    throw new RecordException(RecordErrorCode.INVALID_REQUEST);
+                }
+                return (int) (entry.getValue() / cycleCount);
+            })
+            .sum();
     }
 }

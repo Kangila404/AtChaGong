@@ -260,16 +260,19 @@ public class StatisticsService {
             .sum();
     }
 
-    private int calculateDayCompletedCycleCount(
-        List<FocusRecord> dayRecords
-    ) {
-        int cycleCount = dayRecords.get(0).getCycleCount();
+    private int calculateDayCompletedCycleCount(List<FocusRecord> dayRecords) {
+        Map<Integer, Long> countByCycleCount = dayRecords.stream()
+            .collect(Collectors.groupingBy(FocusRecord::getCycleCount, Collectors.counting()));
 
-        if (cycleCount <= 0) {
-            return 0;
-        }
-
-        return dayRecords.size() / cycleCount;
+        return countByCycleCount.entrySet().stream()
+            .mapToInt(entry -> {
+                int cycleCount = entry.getKey();
+                if (cycleCount < 1) {
+                    return 0;
+                }
+                return (int) (entry.getValue() / cycleCount);
+            })
+            .sum();
     }
 
     private int calculateIntensityLevel(
