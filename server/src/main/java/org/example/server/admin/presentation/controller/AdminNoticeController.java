@@ -2,7 +2,6 @@ package org.example.server.admin.presentation.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.admin.application.AdminNoticeService;
 import org.example.server.admin.presentation.dto.req.AdminNoticePageRequest;
@@ -38,7 +37,7 @@ public class AdminNoticeController {
     @Operation(summary = "관리자 공지 목록 조회")
     public ResponseEntity<ApiResponse<AdminNoticePageResponse>> getNotices(
         @AuthenticationPrincipal String userId,
-        @Valid @ModelAttribute AdminNoticePageRequest request
+        @ModelAttribute AdminNoticePageRequest request
     ) {
         AdminNoticePageResponse response = adminNoticeService.getNotices(userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -48,7 +47,7 @@ public class AdminNoticeController {
     @Operation(summary = "관리자 공지 상세 조회")
     public ResponseEntity<ApiResponse<AdminNoticeDetailResponse>> getNotice(
         @AuthenticationPrincipal String userId,
-        @PathVariable Long noticeId
+        @PathVariable String noticeId
     ) {
         AdminNoticeDetailResponse response = adminNoticeService.getNotice(userId, noticeId);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -58,7 +57,7 @@ public class AdminNoticeController {
     @Operation(summary = "관리자 공지 등록")
     public ResponseEntity<ApiResponse<NoticeCreateResponse>> createNotice(
         @AuthenticationPrincipal String userId,
-        @Valid @RequestBody NoticeCreateRequest request
+        @RequestBody(required = false) NoticeCreateRequest request
     ) {
         NoticeCreateResponse response = adminNoticeService.createNotice(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
@@ -68,8 +67,8 @@ public class AdminNoticeController {
     @Operation(summary = "관리자 공지 수정")
     public ResponseEntity<ApiResponse<NoticeUpdateResponse>> updateNotice(
         @AuthenticationPrincipal String userId,
-        @PathVariable Long noticeId,
-        @Valid @RequestBody NoticeUpdateRequest request
+        @PathVariable String noticeId,
+        @RequestBody(required = false) NoticeUpdateRequest request
     ) {
         NoticeUpdateResponse response = adminNoticeService.updateNotice(userId, noticeId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -79,7 +78,7 @@ public class AdminNoticeController {
     @Operation(summary = "관리자 공지 삭제")
     public ResponseEntity<Void> deleteNotice(
         @AuthenticationPrincipal String userId,
-        @PathVariable Long noticeId
+        @PathVariable String noticeId
     ) {
         adminNoticeService.deleteNotice(userId, noticeId);
         return ResponseEntity.noContent().build();

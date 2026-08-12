@@ -1,15 +1,9 @@
 package org.example.server.admin.presentation.dto.req;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-
 public record AdminNoticePageRequest(
-    @Min(0)
-    Integer page,
+    String page,
 
-    @Min(1)
-    @Max(AdminNoticePageRequest.MAX_SIZE)
-    Integer size,
+    String size,
 
     String status
 ) {
@@ -19,8 +13,6 @@ public record AdminNoticePageRequest(
     public static final String DEFAULT_STATUS = "all";
 
     public AdminNoticePageRequest {
-        page = page == null ? DEFAULT_PAGE : page;
-        size = size == null ? DEFAULT_SIZE : size;
         status = status == null || status.isBlank() ? DEFAULT_STATUS : status.trim();
     }
 }
