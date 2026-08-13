@@ -58,6 +58,17 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("탈퇴 유저는 내 정보를 조회할 수 없다")
+    void getMeWithWithdrawnUserThrowsException() {
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user(UserStatus.WITHDRAWN)));
+
+        assertThatThrownBy(() -> userService.getMe(USER_ID))
+            .isInstanceOf(UserException.class)
+            .extracting("code")
+            .isEqualTo(UserErrorCode.WITHDRAWN_USER.name());
+    }
+
+    @Test
     @DisplayName("닉네임을 변경하면 응답에 변경된 닉네임을 반환한다")
     void updateNicknameChangesNickname() {
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user(UserStatus.ACTIVE)));
