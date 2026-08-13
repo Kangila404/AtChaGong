@@ -98,34 +98,45 @@ class AuthServiceTest {
     @Test
     @DisplayName("신규 소셜 계정으로 로그인하면 사용자와 인증 계정을 생성하고 토큰을 발급한다")
     void socialLoginWithNewAccountCreatesUserAndAuthAccount() {
-        User newUser = user(UserStatus.ACTIVE);
-        AuthAccount newAuthAccount = AuthAccount.create(newUser, AuthType.KAKAO, "provider-1");
+        User persistedUser = user(UserStatus.ACTIVE);
         given(socialAuthProvider.supports()).willReturn(AuthType.KAKAO);
         given(socialAuthProvider.verify("credential")).willReturn(new SocialUserInfo("provider-1"));
         given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
             .willReturn(Optional.empty());
-        given(userRepository.save(any(User.class))).willReturn(newUser);
-        given(authAccountRepository.save(any(AuthAccount.class))).willReturn(newAuthAccount);
-        given(jwtTokenProvider.createAccessToken(USER_ID, UserRole.USER.name())).willReturn("access-token");
-        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(newUser));
-        given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("refresh-token");
+        given(userRepository.save(any(User.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+        given(authAccountRepository.save(any(AuthAccount.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+        given(jwtTokenProvider.createAccessToken(any(String.class), org.mockito.ArgumentMatchers.eq(UserRole.USER.name())))
+            .willReturn("access-token");
+        given(userRepository.findByUserId(any(String.class))).willReturn(Optional.of(persistedUser));
+        given(jwtTokenProvider.createRefreshToken(any(String.class))).willReturn("refresh-token");
         given(refreshTokenRepository.findByUserId(USER_PK)).willReturn(Optional.empty());
 
         LoginResponse response = authService.socialLogin(new LoginRequest(AuthType.KAKAO, "credential"));
 
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
-        assertThat(response.isOnboardingCompleted()).isTrue();
+        assertThat(response.isOnboardingCompleted()).isFalse();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+        User savedUser = userCaptor.getValue();
+        assertThat(savedUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(savedUser.isOnboardingCompleted()).isFalse();
 
         ArgumentCaptor<AuthAccount> authAccountCaptor = ArgumentCaptor.forClass(AuthAccount.class);
         verify(authAccountRepository).save(authAccountCaptor.capture());
-        assertThat(authAccountCaptor.getValue().getUser()).isSameAs(newUser);
-        verify(jwtTokenProvider).createAccessToken(USER_ID, UserRole.USER.name());
-        verify(refreshTokenRepository).save(any(RefreshToken.class));
+        AuthAccount savedAuthAccount = authAccountCaptor.getValue();
+        assertThat(savedAuthAccount.getUser()).isSameAs(savedUser);
+        assertThat(savedAuthAccount.getProvider()).isEqualTo(AuthType.KAKAO);
+        assertThat(savedAuthAccount.getProviderId()).isEqualTo("provider-1");
+        verify(jwtTokenProvider).createAccessToken(savedUser.getUserId(), UserRole.USER.name());
+
+        ArgumentCaptor<RefreshToken> refreshTokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(refreshTokenRepository).save(refreshTokenCaptor.capture());
+        assertThat(refreshTokenCaptor.getValue().getUserId()).isEqualTo(USER_PK);
+        assertThat(refreshTokenCaptor.getValue().getTokenHash()).isEqualTo("refresh-token");
     }
 
     @Test
