@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -62,13 +63,13 @@ public class User extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id")
     private ProfileImg profileImg;
 
     // ============ 비즈니스 로직 ============ //
     // 1. 유저 생성
-    public static User createSocialUser() {
+    public static User createSocialUser(ProfileImg defaultProfileImg) {
         String userId = UUID.randomUUID().toString();
         String temporaryNickname = "사용자" + userId.replace("-", "").substring(0, 6);
 
@@ -77,8 +78,8 @@ public class User extends BaseEntity {
             .nickname(temporaryNickname)
             .userStatus(UserStatus.ACTIVE)
             .userRole(UserRole.USER)
-            .onboardingCompleted(true)
-            .profileImg(ProfileImg.builder().id(DEFAULT_PROFILE_IMG_ID).build())
+            .onboardingCompleted(false)
+            .profileImg(defaultProfileImg)
             .build();
     }
 

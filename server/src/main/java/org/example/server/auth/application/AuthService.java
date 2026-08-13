@@ -19,7 +19,9 @@ import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
@@ -30,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
+
+    private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
     // jwt
     private final JwtTokenProvider jwtTokenProvider;
     // 리포지토리
@@ -37,6 +41,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AuthAccountRepository authAccountRepository;
     private final List<SocialAuthProvider> socialAuthProviders;
+    private final ProfileImgRepository profileImgRepository;
 
 
     @Transactional
@@ -117,12 +122,14 @@ public class AuthService {
 
     // 4. 소셜 계정  생성 메서드
     private AuthAccount createSocialAccount(AuthType authType, String providerId) {
+        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
+
         User user = userRepository.save(
-            User.createSocialUser()
+            User.createSocialUser(defaultProfileImg)
         );
 
         AuthAccount authAccount = AuthAccount.create(user, authType, providerId);
-
         return authAccountRepository.save(authAccount);
     }
 

@@ -15,6 +15,8 @@ import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +37,7 @@ public class DevAuthService {
         String userId = UUID.randomUUID().toString();
 
         ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
-            .orElse(null);
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
 
         User user = User.builder()
             .userId(userId)
@@ -47,7 +49,6 @@ public class DevAuthService {
             .build();
 
         User savedUser = userRepository.save(user);
-
         return DevSignupResponse.from(savedUser.getUserId());
     }
 
