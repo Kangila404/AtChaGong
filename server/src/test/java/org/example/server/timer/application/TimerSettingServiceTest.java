@@ -35,6 +35,7 @@ class TimerSettingServiceTest {
     private static final String USER_ID = "user-1";
     private static final long USER_PK = 1L;
     private static final long BEVERAGE_ID = 10L;
+    private static final long UPDATED_BEVERAGE_ID = 20L;
 
     @InjectMocks
     private TimerSettingService timerSettingService;
@@ -87,6 +88,26 @@ class TimerSettingServiceTest {
     }
 
     @Test
+    @DisplayName("기존 타이머 설정이 있으면 설정 값을 수정한다")
+    void saveSettingUpdatesExistingSetting() {
+        Beverage updatedBeverage = beverage(UPDATED_BEVERAGE_ID, "latte");
+        TimerSetting existingSetting = TimerSetting.create(USER_PK, null, 25, 5, 4);
+        SaveTimerRequest request = new SaveTimerRequest(UPDATED_BEVERAGE_ID, 40, 10, 2);
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(UPDATED_BEVERAGE_ID)).willReturn(Optional.of(updatedBeverage));
+        given(timerSettingRepository.findByUserId(USER_PK)).willReturn(Optional.of(existingSetting));
+
+        SaveTimerResponse response = timerSettingService.saveSetting(USER_ID, request);
+
+        assertThat(existingSetting.getBeverage()).isSameAs(updatedBeverage);
+        assertThat(existingSetting.getFocusMinutes()).isEqualTo(40);
+        assertThat(existingSetting.getBreakMinutes()).isEqualTo(10);
+        assertThat(existingSetting.getCycleCount()).isEqualTo(2);
+        assertThat(response.focusMinutes()).isEqualTo(40);
+        verify(timerSettingRepository, never()).save(any(TimerSetting.class));
+    }
+
+    @Test
     @DisplayName("집중 시간이 0 이하이면 타이머 설정을 저장하지 않는다")
     void saveSettingWithInvalidFocusMinutesThrowsException() {
         SaveTimerRequest request = new SaveTimerRequest(BEVERAGE_ID, 0, 10, 3);
@@ -112,9 +133,13 @@ class TimerSettingServiceTest {
     }
 
     private Beverage beverage() {
+        return beverage(BEVERAGE_ID, "americano");
+    }
+
+    private Beverage beverage(long id, String name) {
         Beverage beverage = org.mockito.Mockito.mock(Beverage.class);
-        given(beverage.getId()).willReturn(BEVERAGE_ID);
-        given(beverage.getName()).willReturn("americano");
+        given(beverage.getId()).willReturn(id);
+        given(beverage.getName()).willReturn(name);
         given(beverage.getImgUrl()).willReturn("https://example.com/americano.png");
         return beverage;
     }
