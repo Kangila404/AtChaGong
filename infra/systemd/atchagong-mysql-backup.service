@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up AtChaGong MySQL to S3
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/AtChaGong/infra
+ExecStart=/home/ubuntu/AtChaGong/infra/scripts/backup-mysql-to-s3.sh
