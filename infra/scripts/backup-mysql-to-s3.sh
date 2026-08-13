@@ -30,14 +30,40 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_file="${BACKUP_DIR}/atchagong-mysql-${timestamp}.sql.gz"
 s3_prefix="${BACKUP_S3_PREFIX:-mysql}"
 retention_days="${BACKUP_RETENTION_DAYS:-7}"
+upload_retries="${BACKUP_UPLOAD_RETRIES:-3}"
+aws_connect_timeout="${AWS_CLI_CONNECT_TIMEOUT:-10}"
+aws_read_timeout="${AWS_CLI_READ_TIMEOUT:-60}"
+s3_uri="s3://${BACKUP_S3_BUCKET}/${s3_prefix}/$(basename "${backup_file}")"
+
+case "${upload_retries}" in
+  ''|*[!0-9]*|0)
+    echo "BACKUP_UPLOAD_RETRIES must be a positive integer" >&2
+    exit 1
+    ;;
+esac
 
 docker exec atchagong-mysql sh -c \
   'set -eu; umask 077; dump_config="$(mktemp)"; trap "rm -f \"$dump_config\"" EXIT; printf "[client]\\nuser=root\\npassword=%s\\n" "$MYSQL_ROOT_PASSWORD" > "$dump_config"; mysqldump --defaults-extra-file="$dump_config" --single-transaction --routines --triggers --events "$MYSQL_DATABASE"' \
   | gzip > "${backup_file}"
 chmod 600 "${backup_file}"
 
-aws s3 cp "${backup_file}" "s3://${BACKUP_S3_BUCKET}/${s3_prefix}/$(basename "${backup_file}")"
+for attempt in $(seq 1 "${upload_retries}"); do
+  if aws \
+    --cli-connect-timeout "${aws_connect_timeout}" \
+    --cli-read-timeout "${aws_read_timeout}" \
+    s3 cp "${backup_file}" "${s3_uri}"; then
+    break
+  fi
+
+  if [ "${attempt}" -eq "${upload_retries}" ]; then
+    echo "Backup upload failed after ${upload_retries} attempts: ${s3_uri}" >&2
+    exit 1
+  fi
+
+  echo "Backup upload attempt ${attempt}/${upload_retries} failed; retrying" >&2
+  sleep 30
+done
 
 find "${BACKUP_DIR}" -type f -name 'atchagong-mysql-*.sql.gz' -mtime "+${retention_days}" -delete
 
-echo "Backup uploaded: s3://${BACKUP_S3_BUCKET}/${s3_prefix}/$(basename "${backup_file}")"
+echo "Backup uploaded: ${s3_uri}"
