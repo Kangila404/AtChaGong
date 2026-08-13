@@ -6,5 +6,6 @@ CREATE TABLE notification_setting (
                                       break_end_enabled BOOLEAN NOT NULL,
                                       created_at DATETIME NOT NULL,
                                       updated_at DATETIME NOT NULL,
-                                      CONSTRAINT uq_notification_setting_user_id UNIQUE (user_id)
+                                      CONSTRAINT uq_notification_setting_user_id UNIQUE (user_id),
+                                      CONSTRAINT fk_notification_setting_user FOREIGN KEY (user_id) REFERENCES users(id)
 );

@@ -1,6 +1,6 @@
 CREATE TABLE auth_account (
                               id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                              user_id BIGINT,
+                              user_id BIGINT NOT NULL,
                               provider INT NOT NULL,
                               provider_id VARCHAR(255) NOT NULL,
                               created_at DATETIME NOT NULL,

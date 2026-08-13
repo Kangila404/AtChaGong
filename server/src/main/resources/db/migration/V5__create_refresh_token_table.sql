@@ -7,5 +7,6 @@ CREATE TABLE refresh_token (
                                created_at DATETIME NOT NULL,
                                updated_at DATETIME NOT NULL,
                                CONSTRAINT uq_refresh_token_user_id UNIQUE (user_id),
-                               CONSTRAINT uq_refresh_token_hash UNIQUE (token_hash)
+                               CONSTRAINT uq_refresh_token_hash UNIQUE (token_hash),
+                               CONSTRAINT fk_refresh_token_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
