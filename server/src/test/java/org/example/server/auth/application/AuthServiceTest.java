@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -91,6 +92,39 @@ class AuthServiceTest {
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.isOnboardingCompleted()).isTrue();
         assertThat(user.getLastLoginAt()).isNotNull();
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("신규 소셜 계정으로 로그인하면 사용자와 인증 계정을 생성하고 토큰을 발급한다")
+    void socialLoginWithNewAccountCreatesUserAndAuthAccount() {
+        User newUser = user(UserStatus.ACTIVE);
+        AuthAccount newAuthAccount = AuthAccount.create(newUser, AuthType.KAKAO, "provider-1");
+        given(socialAuthProvider.supports()).willReturn(AuthType.KAKAO);
+        given(socialAuthProvider.verify("credential")).willReturn(new SocialUserInfo("provider-1"));
+        given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
+            .willReturn(Optional.empty());
+        given(userRepository.save(any(User.class))).willReturn(newUser);
+        given(authAccountRepository.save(any(AuthAccount.class))).willReturn(newAuthAccount);
+        given(jwtTokenProvider.createAccessToken(USER_ID, UserRole.USER.name())).willReturn("access-token");
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(newUser));
+        given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("refresh-token");
+        given(refreshTokenRepository.findByUserId(USER_PK)).willReturn(Optional.empty());
+
+        LoginResponse response = authService.socialLogin(new LoginRequest(AuthType.KAKAO, "credential"));
+
+        assertThat(response.accessToken()).isEqualTo("access-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
+        assertThat(response.isOnboardingCompleted()).isTrue();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+
+        ArgumentCaptor<AuthAccount> authAccountCaptor = ArgumentCaptor.forClass(AuthAccount.class);
+        verify(authAccountRepository).save(authAccountCaptor.capture());
+        assertThat(authAccountCaptor.getValue().getUser()).isSameAs(newUser);
+        verify(jwtTokenProvider).createAccessToken(USER_ID, UserRole.USER.name());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
