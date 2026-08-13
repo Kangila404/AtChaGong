@@ -36,7 +36,7 @@ aws_read_timeout="${AWS_CLI_READ_TIMEOUT:-60}"
 s3_uri="s3://${BACKUP_S3_BUCKET}/${s3_prefix}/$(basename "${backup_file}")"
 
 case "${upload_retries}" in
-  ''|*[!0-9]*|0)
+  ''|0*|*[!0-9]*)
     echo "BACKUP_UPLOAD_RETRIES must be a positive integer" >&2
     exit 1
     ;;
