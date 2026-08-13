@@ -3,6 +3,7 @@ server/.env
 **/.env
 !server/.env.example
 !**/.env.example
+.env.prod
 
 # Java / Gradle
 **/build/

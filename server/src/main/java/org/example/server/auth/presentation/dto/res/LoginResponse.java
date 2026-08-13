@@ -9,11 +9,11 @@ public record LoginResponse(
 
 
     public static LoginResponse of(
-        String refreshToken,
         String accessToken,
+        String refreshToken,
         boolean isOnboardingCompleted
     ) {
-        return new LoginResponse(refreshToken, accessToken, isOnboardingCompleted);
+        return new LoginResponse(accessToken, refreshToken, isOnboardingCompleted);
     }
 
 }
