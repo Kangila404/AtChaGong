@@ -11,8 +11,12 @@ import org.example.server.auth.presentation.dto.res.DevSignupResponse;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DevAuthService {
 
+    private final ProfileImgRepository profileImgRepository;
+    private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
     // jwt
     private final JwtTokenProvider jwtTokenProvider;
-
     // 리포지토리
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -31,16 +36,19 @@ public class DevAuthService {
     public DevSignupResponse signup() {
         String userId = UUID.randomUUID().toString();
 
+        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
+
         User user = User.builder()
             .userId(userId)
             .nickname("개발유저-" + userId.substring(0, 6))
             .userRole(UserRole.USER)
             .userStatus(UserStatus.ACTIVE)
             .onboardingCompleted(false)
+            .profileImg(defaultProfileImg)
             .build();
 
         User savedUser = userRepository.save(user);
-
         return DevSignupResponse.from(savedUser.getUserId());
     }
 

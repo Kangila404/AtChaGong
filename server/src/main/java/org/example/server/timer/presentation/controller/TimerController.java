@@ -2,6 +2,7 @@ package org.example.server.timer.presentation.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.timer.application.TimerSettingService;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,7 +36,7 @@ public class TimerController {
     @PutMapping
     public ResponseEntity<ApiResponse<SaveTimerResponse>> saveSetting(
         @AuthenticationPrincipal String userId,
-        SaveTimerRequest request
+        @Valid @RequestBody SaveTimerRequest request
     ){
         SaveTimerResponse response = timerSettingService.saveSetting(userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));

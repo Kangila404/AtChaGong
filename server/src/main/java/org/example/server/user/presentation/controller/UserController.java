@@ -3,15 +3,17 @@ package org.example.server.user.presentation.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.user.application.UserService;
-import org.example.server.user.presentation.dto.req.OnboardingRequest;
 import org.example.server.user.presentation.dto.req.UpdateNicknameRequest;
-import org.example.server.user.presentation.dto.req.UserMeRequest;
-import org.example.server.user.presentation.dto.res.OnboardingResponse;
+import org.example.server.user.presentation.dto.req.UpdateProfileImgRequest;
+import org.example.server.user.presentation.dto.res.ProfileImgResponse;
 import org.example.server.user.presentation.dto.res.UpdateNicknameResponse;
+import org.example.server.user.presentation.dto.res.UpdateProfileImgResponse;
 import org.example.server.user.presentation.dto.res.UserMeResponse;
+import org.example.server.user.presentation.dto.res.UserProfileResponse;
 import org.example.server.user.presentation.dto.res.WithdrawUserResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,7 +47,7 @@ public class UserController {
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<UpdateNicknameResponse>> updateNickname(
         @AuthenticationPrincipal String userId,
-        UpdateNicknameRequest request){
+        @Valid @RequestBody UpdateNicknameRequest request){
         UpdateNicknameResponse response = userService.updateNickname(userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -56,6 +58,33 @@ public class UserController {
         WithdrawUserResponse response = userService.withdraw(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @Operation(summary = "프로필 이미지 모음 조회")
+    @GetMapping("/profiles")
+    public ResponseEntity<ApiResponse<List<ProfileImgResponse>>> getProfileImgs(){
+        List<ProfileImgResponse> response = userService.getProfileImgs();
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "유저 프로필 이미지 조회")
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfile(
+        @AuthenticationPrincipal String userId
+    ){
+        UserProfileResponse response = userService.getUserProfile(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "유저 프로필 이미지 업데이트")
+    @PatchMapping("/profile")
+    public ResponseEntity<ApiResponse<UpdateProfileImgResponse>> updateProfileImgs(
+        @AuthenticationPrincipal String userId,
+        @Valid @RequestBody UpdateProfileImgRequest request){
+        UpdateProfileImgResponse response = userService.updateProfile(userId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
 
 //    @Operation(summary = "온보딩 API")
 //    @PatchMapping("/me/onboarding")

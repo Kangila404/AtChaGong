@@ -4,9 +4,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -28,6 +32,7 @@ import org.example.server.user.domain.enums.UserStatus;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
+    private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Id
@@ -48,7 +53,7 @@ public class User extends BaseEntity {
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
-    // 닉네임 설정용
+    // 닉네임 설정용(닉네임 필수 아님...)
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted;
 
@@ -58,9 +63,13 @@ public class User extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id")
+    private ProfileImg profileImg;
+
     // ============ 비즈니스 로직 ============ //
     // 1. 유저 생성
-    public static User createSocialUser() {
+    public static User createSocialUser(ProfileImg defaultProfileImg) {
         String userId = UUID.randomUUID().toString();
         String temporaryNickname = "사용자" + userId.replace("-", "").substring(0, 6);
 
@@ -70,6 +79,7 @@ public class User extends BaseEntity {
             .userStatus(UserStatus.ACTIVE)
             .userRole(UserRole.USER)
             .onboardingCompleted(false)
+            .profileImg(defaultProfileImg)
             .build();
     }
 
@@ -98,5 +108,10 @@ public class User extends BaseEntity {
     // 5. 온보딩 처리
     public void  completeOnboarding(){
         this.onboardingCompleted = true;
+    }
+
+    // 6. 프로필 이미지 업데이트
+    public void updateProfile(ProfileImg profileImg){
+        this.profileImg = profileImg;
     }
 }
