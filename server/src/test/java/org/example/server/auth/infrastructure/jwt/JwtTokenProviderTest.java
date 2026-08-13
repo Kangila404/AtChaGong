@@ -42,4 +42,14 @@ class JwtTokenProviderTest {
 
         assertThat(provider.validateToken("invalid-token")).isFalse();
     }
+
+    @Test
+    @DisplayName("만료된 액세스 토큰은 유효하지 않다")
+    void expiredAccessTokenReturnsFalse() {
+        JwtTokenProvider provider = new JwtTokenProvider(SECRET, -1, 3_600_000);
+
+        String token = provider.createAccessToken("user-1", "USER");
+
+        assertThat(provider.validateToken(token)).isFalse();
+    }
 }
