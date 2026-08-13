@@ -42,9 +42,20 @@ case "${upload_retries}" in
     ;;
 esac
 
+case "${retention_days}" in
+  ''|*[!0-9]*)
+    echo "BACKUP_RETENTION_DAYS must be a non-negative integer" >&2
+    exit 1
+    ;;
+esac
+
+temp_backup_file="$(mktemp "${BACKUP_DIR}/.atchagong-mysql-XXXXXX.sql.gz")"
+trap 'rm -f "${temp_backup_file}"' EXIT
+
 docker exec atchagong-mysql sh -c \
   'set -eu; umask 077; dump_config="$(mktemp)"; trap "rm -f \"$dump_config\"" EXIT; printf "[client]\\nuser=root\\npassword=%s\\n" "$MYSQL_ROOT_PASSWORD" > "$dump_config"; mysqldump --defaults-extra-file="$dump_config" --single-transaction --routines --triggers --events "$MYSQL_DATABASE"' \
-  | gzip > "${backup_file}"
+  | gzip > "${temp_backup_file}"
+mv "${temp_backup_file}" "${backup_file}"
 chmod 600 "${backup_file}"
 
 for attempt in $(seq 1 "${upload_retries}"); do
