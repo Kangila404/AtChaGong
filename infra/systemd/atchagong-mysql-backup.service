@@ -6,4 +6,5 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/home/ubuntu/AtChaGong/infra
+ExecStartPre=/bin/sh -c 'for attempt in $(seq 1 30); do status=$(docker inspect --format="{{.State.Health.Status}}" atchagong-mysql 2>/dev/null || true); if [ "$status" = healthy ]; then exit 0; fi; sleep 2; done; echo "MySQL did not become healthy in time" >&2; exit 1'
 ExecStart=/home/ubuntu/AtChaGong/infra/scripts/backup-mysql-to-s3.sh

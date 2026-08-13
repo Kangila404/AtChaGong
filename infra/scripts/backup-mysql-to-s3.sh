@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -21,7 +22,9 @@ if [ -z "${BACKUP_S3_BUCKET:-}" ]; then
   exit 1
 fi
 
-mkdir -p "${BACKUP_DIR}"
+mkdir -p -m 700 "${BACKUP_DIR}"
+chmod 700 "${BACKUP_DIR}"
+find "${BACKUP_DIR}" -type f -name 'atchagong-mysql-*.sql.gz' -exec chmod 600 {} +
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_file="${BACKUP_DIR}/atchagong-mysql-${timestamp}.sql.gz"
@@ -29,8 +32,9 @@ s3_prefix="${BACKUP_S3_PREFIX:-mysql}"
 retention_days="${BACKUP_RETENTION_DAYS:-7}"
 
 docker exec atchagong-mysql sh -c \
-  'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers --events "$MYSQL_DATABASE"' \
+  'set -eu; umask 077; dump_config="$(mktemp)"; trap "rm -f \"$dump_config\"" EXIT; printf "[client]\\nuser=root\\npassword=%s\\n" "$MYSQL_ROOT_PASSWORD" > "$dump_config"; mysqldump --defaults-extra-file="$dump_config" --single-transaction --routines --triggers --events "$MYSQL_DATABASE"' \
   | gzip > "${backup_file}"
+chmod 600 "${backup_file}"
 
 aws s3 cp "${backup_file}" "s3://${BACKUP_S3_BUCKET}/${s3_prefix}/$(basename "${backup_file}")"
 
