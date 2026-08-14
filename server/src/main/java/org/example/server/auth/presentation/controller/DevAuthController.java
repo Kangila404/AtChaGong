@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "개발용 로그인 APi, 개발 끝나고 반드시 지울 것")
-@Profile("local")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/dev")
