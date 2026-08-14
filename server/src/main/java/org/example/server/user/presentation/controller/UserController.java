@@ -7,8 +7,10 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.user.application.UserService;
+import org.example.server.user.presentation.dto.req.OnboardingRequest;
 import org.example.server.user.presentation.dto.req.UpdateNicknameRequest;
 import org.example.server.user.presentation.dto.req.UpdateProfileImgRequest;
+import org.example.server.user.presentation.dto.res.OnboardingResponse;
 import org.example.server.user.presentation.dto.res.ProfileImgResponse;
 import org.example.server.user.presentation.dto.res.UpdateNicknameResponse;
 import org.example.server.user.presentation.dto.res.UpdateProfileImgResponse;
@@ -86,13 +88,13 @@ public class UserController {
 
 
 
-//    @Operation(summary = "온보딩 API")
-//    @PatchMapping("/me/onboarding")
-//    public ResponseEntity<ApiResponse<OnboardingResponse>> onboarding(
-//        @AuthenticationPrincipal String userId,
-//        OnboardingRequest request){
-//        OnboardingResponse response = userService.onboarding(userId, request);
-//        return ResponseEntity.ok(ApiResponse.success(response));
-//    }
+    @Operation(summary = "온보딩 API")
+    @PatchMapping("/me/onboarding")
+    public ResponseEntity<ApiResponse<OnboardingResponse>> onboarding(
+        @AuthenticationPrincipal String userId,
+        OnboardingRequest request){
+        OnboardingResponse response = userService.onboarding(userId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
 }

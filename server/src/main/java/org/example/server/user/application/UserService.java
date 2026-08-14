@@ -9,9 +9,11 @@ import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
+import org.example.server.user.presentation.dto.req.OnboardingRequest;
 import org.example.server.user.presentation.dto.req.UpdateNicknameRequest;
 
 import org.example.server.user.presentation.dto.req.UpdateProfileImgRequest;
+import org.example.server.user.presentation.dto.res.OnboardingResponse;
 import org.example.server.user.presentation.dto.res.ProfileImgResponse;
 import org.example.server.user.presentation.dto.res.UpdateNicknameResponse;
 import org.example.server.user.presentation.dto.res.UpdateProfileImgResponse;
@@ -82,18 +84,18 @@ public class UserService {
     }
 
     // 온보딩 메서드
-//    @Transactional
-//    public OnboardingResponse onboarding(String userId, OnboardingRequest request){
-//        User user = findUserByUserIdOrThrow(userId);
-//        validateUserStatus(user);
-//
-//        if (!request.completed()) {
-//            throw new IllegalArgumentException("온보딩이 완료되지 않았습니다.");
-//        }
-//
-//        user.completeOnboarding();
-//        return new OnboardingResponse(true);
-//    }
+    @Transactional
+    public OnboardingResponse onboarding(String userId, OnboardingRequest request){
+        User user = findUserByUserIdOrThrow(userId);
+        validateUserStatus(user);
+
+        if (!request.completed()) {
+            throw new IllegalArgumentException("온보딩이 완료되지 않았습니다.");
+        }
+
+        user.completeOnboarding();
+        return new OnboardingResponse(true);
+    }
 
 
 

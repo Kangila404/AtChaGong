@@ -1,0 +1,4 @@
+{
+  "app_name": "nas-web",
+  "custom_compose_config_string": "services:\n  nas-web:\n    image: nginx:alpine\n    container_name: nas-web\n    ports:\n      - \"8088:80\"\n    volumes:\n      - /mnt/Ila/ia3264666/nas-web/index.html:/usr/share/nginx/html/index.html:ro\n      - /mnt/Ila/ia3264666/nas-web/styles.css:/usr/share/nginx/html/styles.css:ro\n    restart: unless-stopped\n"
+}
