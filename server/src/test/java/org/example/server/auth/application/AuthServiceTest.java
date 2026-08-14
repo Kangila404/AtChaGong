@@ -7,7 +7,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import org.example.server.auth.domain.enums.AuthType;
@@ -39,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -46,6 +51,7 @@ class AuthServiceTest {
     private static final String USER_ID = "user-1";
     private static final long USER_PK = 1L;
     private static final long DEFAULT_PROFILE_IMG_ID = 1L;
+    private static final long REFRESH_TOKEN_EXPIRATION = 604800000L; // 7일(ms), application.yml과 동일
 
     private AuthService authService;
 
@@ -77,6 +83,7 @@ class AuthServiceTest {
             List.of(socialAuthProvider),
             profileImgRepository
         );
+        ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
 
     @Test
@@ -150,7 +157,7 @@ class AuthServiceTest {
         ArgumentCaptor<RefreshToken> refreshTokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
         verify(refreshTokenRepository).save(refreshTokenCaptor.capture());
         assertThat(refreshTokenCaptor.getValue().getUserId()).isEqualTo(USER_PK);
-        assertThat(refreshTokenCaptor.getValue().getTokenHash()).isEqualTo("refresh-token");
+        assertThat(refreshTokenCaptor.getValue().getTokenHash()).isEqualTo(sha256("refresh-token"));
     }
 
     @Test
@@ -203,8 +210,8 @@ class AuthServiceTest {
     @DisplayName("유효한 리프레시 토큰이면 새 토큰 쌍을 발급한다")
     void reissueWithValidRefreshTokenIssuesNewTokens() {
         User user = user(UserStatus.ACTIVE);
-        RefreshToken savedToken = refreshToken("old-refresh-token", LocalDateTime.now().plusDays(1), null);
-        given(refreshTokenRepository.findByTokenHash("old-refresh-token")).willReturn(Optional.of(savedToken));
+        RefreshToken savedToken = refreshToken(sha256("old-refresh-token"), LocalDateTime.now().plusDays(1), null);
+        given(refreshTokenRepository.findByTokenHash(sha256("old-refresh-token"))).willReturn(Optional.of(savedToken));
         given(userRepository.findById(USER_PK)).willReturn(Optional.of(user));
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user));
         given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("new-refresh-token");
@@ -215,7 +222,7 @@ class AuthServiceTest {
 
         assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
         assertThat(response.accessToken()).isEqualTo("new-access-token");
-        assertThat(savedToken.getTokenHash()).isEqualTo("new-refresh-token");
+        assertThat(savedToken.getTokenHash()).isEqualTo(sha256("new-refresh-token"));
         assertThat(savedToken.isRevoked()).isFalse();
     }
 
@@ -224,11 +231,11 @@ class AuthServiceTest {
     void reissueWithRevokedRefreshTokenThrowsException() {
         User user = user(UserStatus.ACTIVE);
         RefreshToken revokedToken = refreshToken(
-            "refresh-token",
+            sha256("refresh-token"),
             LocalDateTime.now().plusDays(1),
             LocalDateTime.now()
         );
-        given(refreshTokenRepository.findByTokenHash("refresh-token")).willReturn(Optional.of(revokedToken));
+        given(refreshTokenRepository.findByTokenHash(sha256("refresh-token"))).willReturn(Optional.of(revokedToken));
         given(userRepository.findById(USER_PK)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.reissue(new RefreshTokenRequest("refresh-token")))
@@ -241,7 +248,7 @@ class AuthServiceTest {
     @Test
     @DisplayName("존재하지 않는 리프레시 토큰은 재발급할 수 없다")
     void reissueWithUnknownRefreshTokenThrowsException() {
-        given(refreshTokenRepository.findByTokenHash("unknown-token")).willReturn(Optional.empty());
+        given(refreshTokenRepository.findByTokenHash(sha256("unknown-token"))).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.reissue(new RefreshTokenRequest("unknown-token")))
             .isInstanceOf(AuthException.class)
@@ -255,11 +262,11 @@ class AuthServiceTest {
     @DisplayName("만료된 리프레시 토큰은 재발급할 수 없다")
     void reissueWithExpiredRefreshTokenThrowsException() {
         RefreshToken expiredToken = refreshToken(
-            "expired-token",
+            sha256("expired-token"),
             LocalDateTime.now().minusSeconds(1),
             null
         );
-        given(refreshTokenRepository.findByTokenHash("expired-token"))
+        given(refreshTokenRepository.findByTokenHash(sha256("expired-token")))
             .willReturn(Optional.of(expiredToken));
 
         assertThatThrownBy(() -> authService.reissue(new RefreshTokenRequest("expired-token")))
@@ -274,11 +281,11 @@ class AuthServiceTest {
     @DisplayName("토큰에 연결된 사용자가 없으면 재발급할 수 없다")
     void reissueWithUnknownUserThrowsException() {
         RefreshToken savedToken = refreshToken(
-            "refresh-token",
+            sha256("refresh-token"),
             LocalDateTime.now().plusDays(1),
             null
         );
-        given(refreshTokenRepository.findByTokenHash("refresh-token"))
+        given(refreshTokenRepository.findByTokenHash(sha256("refresh-token")))
             .willReturn(Optional.of(savedToken));
         given(userRepository.findById(USER_PK)).willReturn(Optional.empty());
 
@@ -293,11 +300,11 @@ class AuthServiceTest {
     @DisplayName("정지된 사용자는 리프레시 토큰을 재발급할 수 없다")
     void reissueWithSuspendedUserThrowsException() {
         RefreshToken savedToken = refreshToken(
-            "refresh-token",
+            sha256("refresh-token"),
             LocalDateTime.now().plusDays(1),
             null
         );
-        given(refreshTokenRepository.findByTokenHash("refresh-token"))
+        given(refreshTokenRepository.findByTokenHash(sha256("refresh-token")))
             .willReturn(Optional.of(savedToken));
         given(userRepository.findById(USER_PK)).willReturn(Optional.of(user(UserStatus.SUSPENDED)));
 
@@ -313,11 +320,11 @@ class AuthServiceTest {
     @DisplayName("탈퇴한 사용자는 리프레시 토큰을 재발급할 수 없다")
     void reissueWithWithdrawnUserThrowsException() {
         RefreshToken savedToken = refreshToken(
-            "refresh-token",
+            sha256("refresh-token"),
             LocalDateTime.now().plusDays(1),
             null
         );
-        given(refreshTokenRepository.findByTokenHash("refresh-token"))
+        given(refreshTokenRepository.findByTokenHash(sha256("refresh-token")))
             .willReturn(Optional.of(savedToken));
         given(userRepository.findById(USER_PK)).willReturn(Optional.of(user(UserStatus.WITHDRAWN)));
 
@@ -370,5 +377,15 @@ class AuthServiceTest {
             .expiredAt(expiredAt)
             .revokedAt(revokedAt)
             .build();
+    }
+
+    private String sha256(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

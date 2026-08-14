@@ -18,6 +18,7 @@ import org.example.server.admin.presentation.dto.req.NoticeUpdateRequest;
 import org.example.server.admin.presentation.dto.res.AdminNoticePageResponse;
 import org.example.server.admin.presentation.dto.res.NoticeCreateResponse;
 import org.example.server.common.exception.AtchagongException;
+import org.example.server.notice.application.NoticeQuerySupport;
 import org.example.server.notice.domain.enums.NoticeStatus;
 import org.example.server.notice.domain.models.Notice;
 import org.example.server.notice.domain.repository.NoticeRepository;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -51,6 +53,9 @@ class AdminNoticeServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Spy
+    private NoticeQuerySupport noticeQuerySupport = new NoticeQuerySupport();
 
     @Test
     @DisplayName("관리자는 공지 목록을 조회할 수 있다")
