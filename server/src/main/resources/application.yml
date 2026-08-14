@@ -1,6 +1,6 @@
 spring:
   config:
-    import: file:server/.env[.properties]
+    import: optional:file:server/.env[.properties]
 
   application:
     name: atchagong
