@@ -177,8 +177,8 @@ public class AuthService {
     }
 
     // 2. tokenHash -> refreshToken 조회
-    private RefreshToken findRefreshTokenOrThrow(String hashToken){
-        return refreshTokenRepository.findByTokenHash(hashToken)
+    private RefreshToken findRefreshTokenOrThrow(String rawToken){
+        return refreshTokenRepository.findByTokenHash(hashToken(rawToken))
             .orElseThrow(()-> new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN));
     }
 
