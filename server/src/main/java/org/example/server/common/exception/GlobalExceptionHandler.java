@@ -1,5 +1,6 @@
 package org.example.server.common.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -10,6 +11,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -37,12 +39,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (status == null) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        ErrorResponse errorResponse = ErrorResponse.of(status.value(), status.name(), ex.getMessage());
+
+        log.warn("Handled Spring MVC exception: status={}, message={}", status, ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.of(status.value(), status.name(), status.getReasonPhrase());
         return ResponseEntity.status(status).headers(headers).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+
+        log.error("Unhandled exception occurred", e);
+
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.of(CommonErrorCode.INTERNAL_SERVER_ERROR));

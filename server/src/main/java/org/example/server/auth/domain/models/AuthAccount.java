@@ -28,7 +28,7 @@ import org.example.server.user.domain.models.User;
         @UniqueConstraint(name = "uk_auth_provider", columnNames = {"provider", "provider_id"})
     }
 )
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthAccount extends BaseEntity {
 

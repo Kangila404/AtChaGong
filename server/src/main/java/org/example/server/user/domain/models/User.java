@@ -28,7 +28,7 @@ import org.example.server.user.domain.enums.UserStatus;
 @Getter
 @Entity
 @Table(name = "users")
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 

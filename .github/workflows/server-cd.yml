@@ -6,9 +6,7 @@ on:
       - main
     paths:
       - 'server/**'
-      - 'infra/docker-compose.prod.yml'
-      - 'infra/Caddyfile.example'
-      - 'infra/prometheus/prometheus.prod.yml'
+      - 'infra/**'
       - '.github/workflows/server-cd.yml'
   workflow_dispatch:
 
@@ -101,4 +99,9 @@ jobs:
              cd infra && \
              SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env.prod -f docker-compose.prod.yml pull && \
              SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env.prod -f docker-compose.prod.yml up -d && \
-             docker image prune -f"
+             docker image prune -f && \
+             sudo chmod +x scripts/backup-mysql-to-s3.sh && \
+             sudo cp systemd/atchagong-mysql-backup.service /etc/systemd/system/atchagong-mysql-backup.service && \
+             sudo cp systemd/atchagong-mysql-backup.timer /etc/systemd/system/atchagong-mysql-backup.timer && \
+             sudo systemctl daemon-reload && \
+             sudo systemctl enable --now atchagong-mysql-backup.timer"
