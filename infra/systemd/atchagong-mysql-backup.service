@@ -1,0 +1,12 @@
+[Unit]
+Description=Back up AtChaGong MySQL to S3
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/atchagong/infra
+TimeoutStartSec=30min
+ExecStartPre=/bin/sh -c 'for attempt in $(seq 1 60); do status=$(docker inspect --format="{{.State.Health.Status}}" atchagong-mysql 2>/dev/null || true); if [ "$status" = healthy ]; then exit 0; fi; sleep 2; done; echo "MySQL did not become healthy in time" >&2; exit 1'
+ExecStart=/home/ubuntu/atchagong/infra/scripts/backup-mysql-to-s3.sh

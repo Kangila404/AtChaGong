@@ -1,0 +1,3 @@
+atchagong.snapocket.site {
+  reverse_proxy server:8080
+}
