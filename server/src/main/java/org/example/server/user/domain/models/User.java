@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 import org.example.server.common.entity.BaseEntity;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 
 @Builder
 @Getter
@@ -32,7 +34,6 @@ import org.example.server.user.domain.enums.UserStatus;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
-    private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Id
@@ -99,10 +100,10 @@ public class User extends BaseEntity {
     // 4. 회원탈퇴
     public void withdraw(){
         if(this.userStatus == UserStatus.WITHDRAWN){
-            throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
+            throw new UserException(UserErrorCode.ALREADY_WITHDRAWN_USER);
         }
         this.userStatus = UserStatus.WITHDRAWN;
-        this.deletedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.deletedAt = LocalDateTime.now(KST);
     }
 
     // 5. 온보딩 처리

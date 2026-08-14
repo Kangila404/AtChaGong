@@ -1,0 +1,2 @@
+ALTER TABLE auth_account
+    MODIFY COLUMN provider VARCHAR(20) NOT NULL;

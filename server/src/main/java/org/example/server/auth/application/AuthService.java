@@ -30,14 +30,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.HexFormat;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-
+    @Value("${spring.jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
     private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
     // jwt
     private final JwtTokenProvider jwtTokenProvider;
@@ -147,6 +149,7 @@ public class AuthService {
             case WITHDRAWN -> throw new UserException(UserErrorCode.WITHDRAWN_USER);
             case SUSPENDED -> throw new UserException(UserErrorCode.SUSPENDED_USER);
             case ACTIVE -> { }
+            default -> throw new UserException(UserErrorCode.WITHDRAWN_USER); // 알 수 없는 상태는 안전하게 거부
         }
     }
 
@@ -191,7 +194,7 @@ public class AuthService {
             refreshTokenRepository.findByUserId(user.getId())
                 .orElse(null);
 
-        LocalDateTime expiredAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7);
+        LocalDateTime expiredAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plus(Duration.ofMillis(refreshTokenExpiration));
 
         if (savedToken == null) {
             refreshTokenRepository.save(
