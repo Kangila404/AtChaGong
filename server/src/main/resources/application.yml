@@ -24,6 +24,9 @@ spring:
     hibernate:
       ddl-auto: validate
 
+server:
+  forward-headers-strategy: framework
+
 oauth:
   google:
     client-id: ${GOOGLE_CLIENT_ID}
@@ -40,5 +43,3 @@ management:
   metrics:
     tags:
       application: atchagong
-
-
