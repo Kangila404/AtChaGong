@@ -8,7 +8,6 @@ import org.example.server.auth.presentation.dto.req.DevLoginRequest;
 import org.example.server.auth.presentation.dto.res.DevSignupResponse;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.common.response.ApiResponse;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
