@@ -173,6 +173,27 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("소셜 로그인 authType이 없으면 지원하지 않는 provider 예외가 발생한다")
+    void socialLoginWithoutAuthTypeThrowsException() {
+        assertThatThrownBy(() -> authService.socialLogin(new LoginRequest(null, "credential")))
+            .isInstanceOf(AuthException.class)
+            .extracting("code")
+            .isEqualTo(AuthErrorCode.UNSUPPORTED_PROVIDER.name());
+        verify(authAccountRepository, never()).findByProviderAndProviderId(any(), any());
+    }
+
+    @Test
+    @DisplayName("소셜 로그인 credential이 없으면 provider 토큰 필수 예외가 발생한다")
+    void socialLoginWithoutCredentialThrowsException() {
+        assertThatThrownBy(() -> authService.socialLogin(new LoginRequest(AuthType.KAKAO, " ")))
+            .isInstanceOf(AuthException.class)
+            .extracting("code")
+            .isEqualTo(AuthErrorCode.PROVIDER_TOKEN_REQUIRED.name());
+        verify(socialAuthProvider, never()).verify(any());
+        verify(authAccountRepository, never()).findByProviderAndProviderId(any(), any());
+    }
+
+    @Test
     @DisplayName("정지된 사용자는 소셜 로그인할 수 없다")
     void socialLoginWithSuspendedUserThrowsException() {
         User suspendedUser = user(UserStatus.SUSPENDED);
