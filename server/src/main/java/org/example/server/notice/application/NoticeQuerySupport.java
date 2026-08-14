@@ -49,7 +49,9 @@ public class NoticeQuerySupport {
     }
 
     public boolean isNew(Notice notice) {
-        LocalDateTime newBadgeEndsAt = notice.getPublishStartsAt().plusDays(NEW_BADGE_DAYS);
-        return !LocalDateTime.now(SEOUL_ZONE).isAfter(newBadgeEndsAt);
+        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
+        LocalDateTime publishStartsAt = notice.getPublishStartsAt();
+        LocalDateTime newBadgeEndsAt = publishStartsAt.plusDays(NEW_BADGE_DAYS);
+        return !now.isBefore(publishStartsAt) && !now.isAfter(newBadgeEndsAt);
     }
 }
