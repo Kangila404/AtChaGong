@@ -80,7 +80,7 @@ jobs:
       - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/atchagong-prod
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/atchagong-prod
           chmod 600 ~/.ssh/atchagong-prod
           echo "${{ secrets.EC2_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
