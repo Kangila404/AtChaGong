@@ -1,6 +1,11 @@
 package org.example.server.auth.application;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HexFormat;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.example.server.auth.domain.models.RefreshToken;
@@ -102,25 +107,37 @@ public class DevAuthService {
 
         String refreshToken =
             jwtTokenProvider.createRefreshToken(userId);
+        String hashedToken = hashToken(refreshToken);
 
         RefreshToken savedToken =
             refreshTokenRepository.findByUserId(user.getId())
                 .orElse(null);
 
-        LocalDateTime expiredAt = LocalDateTime.now().plusDays(7);
+        LocalDateTime expiredAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7);
 
         if (savedToken == null) {
             refreshTokenRepository.save(
                 RefreshToken.builder()
                     .userId(user.getId())
-                    .tokenHash(refreshToken)
+                    .tokenHash(hashedToken)
                     .expiredAt(expiredAt)
                     .build()
             );
         } else {
-            savedToken.updateToken(refreshToken, expiredAt);
+            savedToken.updateToken(hashedToken, expiredAt);
         }
 
         return refreshToken;
+    }
+
+    // 2. 토큰 해시
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 }

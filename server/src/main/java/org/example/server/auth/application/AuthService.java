@@ -27,6 +27,11 @@ import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.util.HexFormat;
 
 @Service
 @RequiredArgsConstructor
@@ -175,22 +180,42 @@ public class AuthService {
     }
 
     // 3. 리프레시 토큰 발급 및 저장
-    private String saveRefreshToken(String userId){
+    private String saveRefreshToken(String userId) {
         User user = findUserByUserIdOrThrow(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
-        RefreshToken savedToken = refreshTokenRepository.findByUserId(user.getId()).orElse(null);
 
-        if(savedToken == null){
+        String refreshToken =
+            jwtTokenProvider.createRefreshToken(userId);
+        String hashedToken = hashToken(refreshToken);
+
+        RefreshToken savedToken =
+            refreshTokenRepository.findByUserId(user.getId())
+                .orElse(null);
+
+        LocalDateTime expiredAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7);
+
+        if (savedToken == null) {
             refreshTokenRepository.save(
                 RefreshToken.builder()
                     .userId(user.getId())
-                    .tokenHash(refreshToken)
-                    .expiredAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7))
-                    .build());
+                    .tokenHash(hashedToken)
+                    .expiredAt(expiredAt)
+                    .build()
+            );
         } else {
-            savedToken.updateToken(refreshToken, LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(7));
+            savedToken.updateToken(hashedToken, expiredAt);
         }
+
         return refreshToken;
+    }
+
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
 

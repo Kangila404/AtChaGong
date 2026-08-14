@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +42,7 @@ public class RefreshToken extends BaseEntity {
     // 비즈니스 로직
     // 1. 토큰 만료 확인
     public boolean isExpired(){
-        return LocalDateTime.now().isAfter(expiredAt);
+        return LocalDateTime.now(ZoneId.of("Asia/Seoul")).isAfter(expiredAt);
     }
 
     // 2. 재로그인 시 토큰 날짜 업데이트
