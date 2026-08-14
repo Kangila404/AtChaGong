@@ -55,10 +55,10 @@ class StatisticsServiceTest {
     void getStatisticsForAllCalculatesSummary() {
         LocalDate today = LocalDate.now(SEOUL_ZONE);
         List<FocusRecord> records = List.of(
-            focusRecord(today.minusDays(2), 3_600, 2),
-            focusRecord(today.minusDays(1), 1_800, 2),
-            focusRecord(today.minusDays(1), 1_800, 2),
-            focusRecord(today, 1_500, 1)
+            focusRecord(today.minusDays(2), 3_600),
+            focusRecord(today.minusDays(1), 1_800),
+            focusRecord(today.minusDays(1), 1_800),
+            focusRecord(today, 1_500)
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user(UserStatus.ACTIVE)));
         given(focusRecordRepository.findAllByUserId(USER_PK)).willReturn(records);
@@ -68,10 +68,10 @@ class StatisticsServiceTest {
         assertThat(response.period()).isEqualTo("all");
         assertThat(response.totalFocusedSeconds()).isEqualTo(8_700);
         assertThat(response.totalFocusedHours()).isEqualTo(2);
-        assertThat(response.completedCupCount()).isEqualTo(4);
-        assertThat(response.completedCycleCount()).isEqualTo(2);
-        assertThat(response.currentStreakDays()).isEqualTo(2);
-        assertThat(response.longestStreakDays()).isEqualTo(2);
+        assertThat(response.completedCupCount()).isEqualTo(5);
+        assertThat(response.completedCycleCount()).isEqualTo(4);
+        assertThat(response.currentStreakDays()).isEqualTo(3);
+        assertThat(response.longestStreakDays()).isEqualTo(3);
     }
 
     @Test
@@ -79,8 +79,8 @@ class StatisticsServiceTest {
     void getStatisticsForTodayFiltersTodayRecords() {
         LocalDate today = LocalDate.now(SEOUL_ZONE);
         List<FocusRecord> records = List.of(
-            focusRecord(today, 1_500, 1),
-            focusRecord(today.minusDays(1), 3_600, 1)
+            focusRecord(today, 1_500),
+            focusRecord(today.minusDays(1), 3_600)
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user(UserStatus.ACTIVE)));
         given(focusRecordRepository.findAllByUserId(USER_PK)).willReturn(records);
@@ -111,12 +111,12 @@ class StatisticsServiceTest {
         int year = 2024;
         int month = 1;
         List<FocusRecord> records = List.of(
-            focusRecord(LocalDate.of(year, month, 1), 1_500, 1),
-            focusRecord(LocalDate.of(year, month, 2), 2_000, 1),
-            focusRecord(LocalDate.of(year, month, 2), 2_500, 1),
-            focusRecord(LocalDate.of(year, month, 3), 1_000, 1),
-            focusRecord(LocalDate.of(year, month, 3), 1_000, 1),
-            focusRecord(LocalDate.of(year, month, 3), 1_000, 1)
+            focusRecord(LocalDate.of(year, month, 1), 1_500),
+            focusRecord(LocalDate.of(year, month, 2), 2_000),
+            focusRecord(LocalDate.of(year, month, 2), 2_500),
+            focusRecord(LocalDate.of(year, month, 3), 1_000),
+            focusRecord(LocalDate.of(year, month, 3), 1_000),
+            focusRecord(LocalDate.of(year, month, 3), 1_000)
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user(UserStatus.ACTIVE)));
         given(focusRecordRepository.findAllByUserIdAndFocusedDateBetween(
@@ -128,12 +128,12 @@ class StatisticsServiceTest {
         CalendarResponse response = statisticsService.getCalendar(USER_ID, year, month);
 
         assertThat(response.totalFocusedSeconds()).isEqualTo(9_000);
-        assertThat(response.completedCupCount()).isEqualTo(6);
+        assertThat(response.completedCupCount()).isEqualTo(3);
         assertThat(response.bestDay().date()).isEqualTo(LocalDate.of(year, month, 2));
         assertThat(response.bestDay().focusedSeconds()).isEqualTo(4_500);
         assertThat(response.days())
             .extracting(CalendarResponse.DayStat::intensityLevel)
-            .containsExactly(2, 3, 4);
+            .containsExactly(2, 4, 0);
     }
 
     @Test
@@ -159,15 +159,14 @@ class StatisticsServiceTest {
             .build();
     }
 
-    private FocusRecord focusRecord(LocalDate focusedDate, int focusedSeconds, int cycleCount) {
+    private FocusRecord focusRecord(LocalDate focusedDate, int focusedSeconds) {
         return FocusRecord.create(
             USER_PK,
             org.mockito.Mockito.mock(Beverage.class),
             25,
             focusedSeconds,
             LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 0)),
-            LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 30)),
-            cycleCount
+            LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 30))
         );
     }
 }
