@@ -9,8 +9,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
@@ -20,21 +18,14 @@ import org.example.server.record.exception.RecordErrorCode;
 import org.example.server.record.exception.RecordException;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
-import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse.DailyRecord;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
-import org.example.server.timer.domain.models.TimerSetting;
-import org.example.server.timer.domain.repository.TimerSettingRepository;
-import org.example.server.timer.exception.TimerErrorCode;
-import org.example.server.timer.exception.TimerException;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.UserRepository;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +36,6 @@ public class FocusRecordService {
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
-    private final TimerSettingRepository timerSettingRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -60,16 +50,13 @@ public class FocusRecordService {
 
         validateDuplicateFocusRecord(user.getId(), startedAt);
 
-        int cycleCount = findTimerSettingByUserIdOrThrow(user.getId()).getCycleCount();
-
         FocusRecord focusRecord = FocusRecord.create(
             user.getId(),
             beverage,
             request.focusMinutes(),
             request.focusedSeconds(),
             startedAt,
-            completedAt,
-            cycleCount
+            completedAt
         );
         FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
 
@@ -88,18 +75,10 @@ public class FocusRecordService {
         LocalDate focusedDate = parseDateOrThrow(date);
         List<FocusRecord> focusRecords = focusRecordRepository.findByUserIdAndFocusedDate(user.getId(), focusedDate);
 
-        List<DailyRecord> records = focusRecords.stream()
-            .map(focusRecord -> DailyRecord.of(
-                focusRecord,
-                toSeoulOffsetDateTime(focusRecord.getStartedAt()),
-                toSeoulOffsetDateTime(focusRecord.getCompletedAt())
-            ))
-            .toList();
-
         int totalFocusedSeconds = sumFocusedSeconds(focusRecords);
-        int completedCycleCount = calculateCompletedCycleCount(focusRecords);
+        int completedCupCount = sumCupCount(focusRecords);
 
-        return DailyFocusRecordResponse.of(focusedDate, records, totalFocusedSeconds, completedCycleCount);
+        return DailyFocusRecordResponse.of(focusedDate, totalFocusedSeconds, completedCupCount);
     }
 
     private User findUserByUserIdOrThrow(String userId) {
@@ -113,11 +92,6 @@ public class FocusRecordService {
         }
         return beverageRepository.findById(beverageId)
             .orElseThrow(() -> new RecordException(RecordErrorCode.BEVERAGE_NOT_FOUND));
-    }
-
-    private TimerSetting findTimerSettingByUserIdOrThrow(Long userId) {
-        return timerSettingRepository.findByUserId(userId)
-            .orElseThrow(() -> new TimerException(TimerErrorCode.TIMER_NOT_FOUND));
     }
 
     private void validateUserStatus(UserStatus userStatus){
@@ -205,18 +179,11 @@ public class FocusRecordService {
             .sum();
     }
 
-    private int calculateCompletedCycleCount(List<FocusRecord> focusRecords) {
-        Map<Integer, Long> countByCycleCount = focusRecords.stream()
-            .collect(Collectors.groupingBy(FocusRecord::getCycleCount, Collectors.counting()));
-
-        return countByCycleCount.entrySet().stream()
-            .mapToInt(entry -> {
-                int cycleCount = entry.getKey();
-                if (cycleCount < 1) {
-                    throw new RecordException(RecordErrorCode.INVALID_REQUEST);
-                }
-                return (int) (entry.getValue() / cycleCount);
-            })
+    // 컵 개수 = 레코드별 (focusedSeconds ÷ (focusMinutes × 60)) 합계.
+    // cycleCount 컬럼 없이, 저장된 실공부시간과 회당 집중시간으로 반복 횟수를 역산한다.
+    private int sumCupCount(List<FocusRecord> focusRecords) {
+        return focusRecords.stream()
+            .mapToInt(record -> record.getFocusedSeconds() / (record.getFocusMinutes() * 60))
             .sum();
     }
 }

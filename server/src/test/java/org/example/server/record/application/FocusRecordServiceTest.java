@@ -22,8 +22,6 @@ import org.example.server.record.exception.RecordException;
 import org.example.server.record.presentation.dto.req.CreateFocusRecordRequest;
 import org.example.server.record.presentation.dto.res.DailyFocusRecordResponse;
 import org.example.server.record.presentation.dto.res.FocusRecordResponse;
-import org.example.server.timer.domain.models.TimerSetting;
-import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
@@ -53,9 +51,6 @@ class FocusRecordServiceTest {
     private BeverageRepository beverageRepository;
 
     @Mock
-    private TimerSettingRepository timerSettingRepository;
-
-    @Mock
     private UserRepository userRepository;
 
     @Test
@@ -69,7 +64,6 @@ class FocusRecordServiceTest {
         given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
         given(focusRecordRepository.existsByUserIdAndStartedAt(USER_PK, LocalDateTime.of(2024, 1, 15, 9, 0)))
             .willReturn(false);
-        given(timerSettingRepository.findByUserId(USER_PK)).willReturn(Optional.of(timerSetting(beverage, 4)));
         given(focusRecordRepository.save(any(FocusRecord.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         FocusRecordResponse response = focusRecordService.createFocusRecord(USER_ID, request);
@@ -84,7 +78,6 @@ class FocusRecordServiceTest {
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
         assertThat(saved.getFocusedDate()).isEqualTo(LocalDate.of(2024, 1, 15));
-        assertThat(saved.getCycleCount()).isEqualTo(4);
         assertThat(response.focusMinutes()).isEqualTo(25);
     }
 
@@ -109,9 +102,9 @@ class FocusRecordServiceTest {
         Beverage beverage = beverage();
         LocalDate focusedDate = LocalDate.of(2024, 1, 15);
         List<FocusRecord> records = List.of(
-            focusRecord(beverage, 25, 1_500, LocalDateTime.of(2024, 1, 15, 9, 0), 2),
-            focusRecord(beverage, 25, 1_600, LocalDateTime.of(2024, 1, 15, 10, 0), 2),
-            focusRecord(beverage, 25, 1_700, LocalDateTime.of(2024, 1, 15, 11, 0), 3)
+            focusRecord(beverage, 25, 1_500, LocalDateTime.of(2024, 1, 15, 9, 0)),
+            focusRecord(beverage, 25, 1_600, LocalDateTime.of(2024, 1, 15, 10, 0)),
+            focusRecord(beverage, 25, 1_700, LocalDateTime.of(2024, 1, 15, 11, 0))
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
         given(focusRecordRepository.findByUserIdAndFocusedDate(USER_PK, focusedDate)).willReturn(records);
@@ -121,9 +114,6 @@ class FocusRecordServiceTest {
         assertThat(response.date()).isEqualTo(focusedDate);
         assertThat(response.totalFocusedSeconds()).isEqualTo(4_800);
         assertThat(response.completedCupCount()).isEqualTo(3);
-        assertThat(response.completedCycleCount()).isEqualTo(1);
-        assertThat(response.cycleAchieved()).isTrue();
-        assertThat(response.records()).hasSize(3);
     }
 
     @Test
@@ -153,19 +143,14 @@ class FocusRecordServiceTest {
         return org.mockito.Mockito.mock(Beverage.class);
     }
 
-    private TimerSetting timerSetting(Beverage beverage, int cycleCount) {
-        return TimerSetting.create(USER_PK, beverage, 25, 5, cycleCount);
-    }
-
-    private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt, int cycleCount) {
+    private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt) {
         return FocusRecord.create(
             USER_PK,
             beverage,
             focusMinutes,
             focusedSeconds,
             startedAt,
-            startedAt.plusMinutes(30),
-            cycleCount
+            startedAt.plusMinutes(30)
         );
     }
 }
