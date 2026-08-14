@@ -54,10 +54,11 @@ public class StatisticsService {
 
         long totalFocusedSeconds = sumFocusedSeconds(filtered);
         long totalFocusedHours = totalFocusedSeconds / 3600;
-        int completedCupCount = filtered.size();
 
-        int completedCycleCount =
-            calculateTotalCompletedCycleCount(filtered);
+        // 컵 개수 = 레코드들의 cycleCount(반복 횟수) 합계.
+        // 사이클 개수 = 레코드 개수. 레코드 하나는 반복 횟수와 무관하게 사이클 1개다.
+        int completedCupCount = sumCupCount(filtered);
+        int completedCycleCount = filtered.size();
 
         List<LocalDate> achievedDatesAsc =
             calculateCycleAchievedDates(allRecords);
@@ -91,13 +92,18 @@ public class StatisticsService {
 
         YearMonth yearMonth = YearMonth.of(year, month);
 
+        // 실제로 집중 시간이 발생한 기록만 집계 대상으로 삼는다.
+        // (focusedSeconds == 0인 레코드는 "공부한 기록"으로 취급하지 않음)
         List<FocusRecord> records =
             focusRecordRepository
                 .findAllByUserIdAndFocusedDateBetween(
                     user.getId(),
                     yearMonth.atDay(1),
                     yearMonth.atEndOfMonth()
-                );
+                )
+                .stream()
+                .filter(record -> record.getFocusedSeconds() > 0)
+                .toList();
 
         Map<LocalDate, List<FocusRecord>> byDate =
             records.stream()
@@ -116,12 +122,13 @@ public class StatisticsService {
                     )
                 );
 
+        // 컵 개수 = 그 날 레코드들의 cycleCount 합계 (레코드 개수가 아님)
         Map<LocalDate, Integer> cupCountByDate =
             byDate.entrySet().stream()
                 .collect(
                     Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> entry.getValue().size()
+                        entry -> sumCupCount(entry.getValue())
                     )
                 );
 
@@ -131,6 +138,8 @@ public class StatisticsService {
                 .max()
                 .orElse(0);
 
+        // cupCountByDate는 실제 기록이 존재하는 날짜만 key로 가지므로,
+        // 한 달 전체가 0건이면 days는 자연스럽게 빈 배열이 된다.
         List<CalendarResponse.DayStat> days =
             cupCountByDate.entrySet().stream()
                 .map(entry ->
@@ -150,8 +159,9 @@ public class StatisticsService {
                 .toList();
 
         long totalFocusedSeconds = sumFocusedSeconds(records);
-        int completedCupCount = records.size();
+        int completedCupCount = sumCupCount(records);
 
+        // secondsByDate가 비어 있으면(=해당 월 전부 0) findBestDay는 null을 반환한다.
         CalendarResponse.BestDay bestDay =
             findBestDay(byDate, secondsByDate);
 
@@ -246,35 +256,12 @@ public class StatisticsService {
             .sum();
     }
 
-    private int calculateTotalCompletedCycleCount(
-        List<FocusRecord> records
-    ) {
-        Map<LocalDate, List<FocusRecord>> byDate =
-            records.stream()
-                .collect(
-                    Collectors.groupingBy(FocusRecord::getFocusedDate)
-                );
-
-        return byDate.values().stream()
-            .mapToInt(this::calculateDayCompletedCycleCount)
+    // 컵 개수 = 레코드별 (focusedSeconds ÷ (focusMinutes × 60)) 합계
+    private int sumCupCount(List<FocusRecord> records) {
+        return records.stream()
+            .mapToInt(record -> record.getFocusedSeconds() / (record.getFocusMinutes() * 60))
             .sum();
     }
-
-    private int calculateDayCompletedCycleCount(List<FocusRecord> dayRecords) {
-        Map<Integer, Long> countByCycleCount = dayRecords.stream()
-            .collect(Collectors.groupingBy(FocusRecord::getCycleCount, Collectors.counting()));
-
-        return countByCycleCount.entrySet().stream()
-            .mapToInt(entry -> {
-                int cycleCount = entry.getKey();
-                if (cycleCount < 1) {
-                    return 0;
-                }
-                return (int) (entry.getValue() / cycleCount);
-            })
-            .sum();
-    }
-
     private int calculateIntensityLevel(
         int cupCount,
         int maxCupCountInMonth
@@ -301,26 +288,20 @@ public class StatisticsService {
                 return new CalendarResponse.BestDay(
                     date,
                     entry.getValue(),
-                    byDate.get(date).size()
+                    sumCupCount(byDate.get(date))
                 );
             })
             .orElse(null);
     }
 
+    // 레코드가 하나라도 있는 날 = 사이클을 1개 이상 달성한 날
+    // (레코드 하나 = 반복 횟수와 무관하게 사이클 1개이므로 별도 계산이 필요 없다)
     private List<LocalDate> calculateCycleAchievedDates(
         List<FocusRecord> records
     ) {
-        Map<LocalDate, List<FocusRecord>> byDate =
-            records.stream()
-                .collect(
-                    Collectors.groupingBy(FocusRecord::getFocusedDate)
-                );
-
-        return byDate.entrySet().stream()
-            .filter(entry ->
-                calculateDayCompletedCycleCount(entry.getValue()) >= 1
-            )
-            .map(Map.Entry::getKey)
+        return records.stream()
+            .map(FocusRecord::getFocusedDate)
+            .distinct()
             .sorted()
             .toList();
     }
