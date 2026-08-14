@@ -28,6 +28,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       LOKI_URL: http://loki:3100/loki/api/v1/push
       TZ: Asia/Seoul
     depends_on:

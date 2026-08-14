@@ -26,7 +26,9 @@ import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
@@ -43,6 +45,7 @@ class AuthServiceTest {
 
     private static final String USER_ID = "user-1";
     private static final long USER_PK = 1L;
+    private static final long DEFAULT_PROFILE_IMG_ID = 1L;
 
     private AuthService authService;
 
@@ -61,6 +64,9 @@ class AuthServiceTest {
     @Mock
     private SocialAuthProvider socialAuthProvider;
 
+    @Mock
+    private ProfileImgRepository profileImgRepository;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -68,7 +74,8 @@ class AuthServiceTest {
             refreshTokenRepository,
             userRepository,
             authAccountRepository,
-            List.of(socialAuthProvider)
+            List.of(socialAuthProvider),
+            profileImgRepository
         );
     }
 
@@ -99,10 +106,16 @@ class AuthServiceTest {
     @DisplayName("신규 소셜 계정으로 로그인하면 사용자와 인증 계정을 생성하고 토큰을 발급한다")
     void socialLoginWithNewAccountCreatesUserAndAuthAccount() {
         User persistedUser = user(UserStatus.ACTIVE);
+        ProfileImg defaultProfileImg = ProfileImg.builder()
+            .id(DEFAULT_PROFILE_IMG_ID)
+            .name("북극곰")
+            .imgUrl("Profile_1.png")
+            .build();
         given(socialAuthProvider.supports()).willReturn(AuthType.KAKAO);
         given(socialAuthProvider.verify("credential")).willReturn(new SocialUserInfo("provider-1"));
         given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
             .willReturn(Optional.empty());
+        given(profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)).willReturn(Optional.of(defaultProfileImg));
         given(userRepository.save(any(User.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
         given(authAccountRepository.save(any(AuthAccount.class)))
@@ -124,6 +137,7 @@ class AuthServiceTest {
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(savedUser.isOnboardingCompleted()).isFalse();
+        assertThat(savedUser.getProfileImg()).isEqualTo(defaultProfileImg);
 
         ArgumentCaptor<AuthAccount> authAccountCaptor = ArgumentCaptor.forClass(AuthAccount.class);
         verify(authAccountRepository).save(authAccountCaptor.capture());
