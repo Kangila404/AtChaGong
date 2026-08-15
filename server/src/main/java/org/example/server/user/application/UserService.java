@@ -90,7 +90,7 @@ public class UserService {
         validateUserStatus(user);
 
         if (!request.completed()) {
-            throw new IllegalArgumentException("온보딩이 완료되지 않았습니다.");
+            throw new UserException(UserErrorCode.INCOMPLETE_ONBOARDING);
         }
 
         user.completeOnboarding();
