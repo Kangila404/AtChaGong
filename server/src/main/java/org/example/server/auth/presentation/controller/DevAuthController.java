@@ -31,14 +31,14 @@ public class DevAuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "mock 회원가입")
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<DevSignupResponse>> signup() {
-        DevSignupResponse response = devAuthService.signup();
-
-        return ResponseEntity.ok(
-            ApiResponse.success(response)
-        );
-    }
+//    @Operation(summary = "mock 회원가입")
+//    @PostMapping("/signup")
+//    public ResponseEntity<ApiResponse<DevSignupResponse>> signup() {
+//        DevSignupResponse response = devAuthService.signup();
+//
+//        return ResponseEntity.ok(
+//            ApiResponse.success(response)
+//        );
+//    }
 
 }
