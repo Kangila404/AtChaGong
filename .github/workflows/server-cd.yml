@@ -101,6 +101,7 @@ jobs:
              cd infra && \
              SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env.prod -f docker-compose.prod.yml pull && \
              SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env.prod -f docker-compose.prod.yml up -d && \
+             (grep -q '^SERVER_IMAGE=' .env.prod && sed -i \"s#^SERVER_IMAGE=.*#SERVER_IMAGE=${SERVER_IMAGE}#\" .env.prod || echo \"SERVER_IMAGE=${SERVER_IMAGE}\" >> .env.prod) && \
              chmod +x scripts/wait-for-server.sh && \
              ./scripts/wait-for-server.sh atchagong-server 30 && \
              docker image prune -f && \
