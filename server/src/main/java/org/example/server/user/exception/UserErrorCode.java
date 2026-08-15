@@ -13,8 +13,8 @@ public enum UserErrorCode implements ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     SUSPENDED_USER(HttpStatus.FORBIDDEN, "정지된 회원입니다."),
     WITHDRAWN_USER(HttpStatus.FORBIDDEN, "탈퇴한 회원입니다."),
-    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 프로필 이미지를 찾을 수 없습니다.");
-
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 프로필 이미지를 찾을 수 없습니다."),
+    INCOMPLETE_ONBOARDING(HttpStatus.FORBIDDEN,"온보딩을 완료하지 않은 회원입니다.");
     private final HttpStatus status;
     private final String message;
 }
