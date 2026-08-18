@@ -28,6 +28,10 @@ import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
+import org.example.server.notification.domain.repositories.DeviceTokenRepository;
+import org.example.server.notification.domain.repositories.NotificationSettingRepository;
+import org.example.server.record.domain.repository.FocusRecordRepository;
+import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
@@ -73,6 +77,18 @@ class AuthServiceTest {
     @Mock
     private ProfileImgRepository profileImgRepository;
 
+    @Mock
+    private FocusRecordRepository focusRecordRepository;
+
+    @Mock
+    private TimerSettingRepository timerSettingRepository;
+
+    @Mock
+    private NotificationSettingRepository notificationSettingRepository;
+
+    @Mock
+    private DeviceTokenRepository deviceTokenRepository;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -81,7 +97,11 @@ class AuthServiceTest {
             userRepository,
             authAccountRepository,
             List.of(socialAuthProvider),
-            profileImgRepository
+            profileImgRepository,
+            focusRecordRepository,
+            timerSettingRepository,
+            notificationSettingRepository,
+            deviceTokenRepository
         );
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
@@ -190,20 +210,41 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("탈퇴한 사용자는 소셜 로그인할 수 없다")
-    void socialLoginWithWithdrawnUserThrowsException() {
+    @DisplayName("탈퇴한 사용자가 같은 소셜 계정으로 로그인하면 재가입 처리하고 데이터를 초기화한다")
+    void socialLoginWithWithdrawnUserRejoinsAndClearsUserData() {
         User withdrawnUser = user(UserStatus.WITHDRAWN);
+        ProfileImg defaultProfileImg = ProfileImg.builder()
+            .id(DEFAULT_PROFILE_IMG_ID)
+            .name("북극곰")
+            .imgUrl("Profile_1.png")
+            .build();
         given(socialAuthProvider.supports()).willReturn(AuthType.KAKAO);
         given(socialAuthProvider.verify("credential")).willReturn(new SocialUserInfo("provider-1"));
         given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
             .willReturn(Optional.of(AuthAccount.create(withdrawnUser, AuthType.KAKAO, "provider-1")));
+        given(profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)).willReturn(Optional.of(defaultProfileImg));
+        given(jwtTokenProvider.createAccessToken(USER_ID, UserRole.USER.name())).willReturn("access-token");
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(withdrawnUser));
+        given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("refresh-token");
+        given(refreshTokenRepository.findByUserId(USER_PK)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.socialLogin(new LoginRequest(AuthType.KAKAO, "credential")))
-            .isInstanceOf(UserException.class)
-            .extracting("code")
-            .isEqualTo(UserErrorCode.WITHDRAWN_USER.name());
-        verify(jwtTokenProvider, never()).createAccessToken(any(), any());
-        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+        LoginResponse response = authService.socialLogin(new LoginRequest(AuthType.KAKAO, "credential"));
+
+        assertThat(response.accessToken()).isEqualTo("access-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
+        assertThat(response.isOnboardingCompleted()).isFalse();
+        assertThat(withdrawnUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(withdrawnUser.isOnboardingCompleted()).isFalse();
+        assertThat(withdrawnUser.getDeletedAt()).isNull();
+        assertThat(withdrawnUser.getProfileImg()).isEqualTo(defaultProfileImg);
+        assertThat(withdrawnUser.getNickname()).startsWith("사용자");
+
+        verify(refreshTokenRepository).deleteByUserId(USER_PK);
+        verify(focusRecordRepository).deleteByUserId(USER_PK);
+        verify(timerSettingRepository).deleteByUserId(USER_PK);
+        verify(notificationSettingRepository).deleteByUserId(USER_PK);
+        verify(deviceTokenRepository).deleteByUserId(USER_PK);
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
