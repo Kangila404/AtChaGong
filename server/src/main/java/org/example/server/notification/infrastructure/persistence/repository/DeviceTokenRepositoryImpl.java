@@ -26,4 +26,9 @@ public class DeviceTokenRepositoryImpl implements DeviceTokenRepository {
     public DeviceToken save(DeviceToken deviceToken) {
         return deviceTokenJpaRepository.save(deviceToken);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        deviceTokenJpaRepository.deleteByUserId(userId);
+    }
 }

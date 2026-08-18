@@ -7,4 +7,5 @@ public interface DeviceTokenRepository {
     Optional<DeviceToken> findByUserId(Long userId);
     Optional<DeviceToken> findByToken(String token);
     DeviceToken save(DeviceToken deviceToken);
+    void deleteByUserId(Long userId);
 }
