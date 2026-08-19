@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import org.example.server.record.domain.models.FocusRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 public interface FocusRecordJpaRepository extends JpaRepository<FocusRecord,Long> {
 
@@ -18,4 +20,8 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecord,Long
     List<FocusRecord> findAllByUserIdAndFocusedDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
     List<FocusRecord> findAllByUserIdAndFocusedDate(Long userId, LocalDate focusedDate);
+
+    @Modifying
+    @Query("delete from FocusRecord focusRecord where focusRecord.userId = :userId")
+    void deleteByUserId(Long userId);
 }

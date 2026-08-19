@@ -21,4 +21,9 @@ public class NotificationSettingRepositoryImpl implements NotificationSettingRep
     public NotificationSetting save(NotificationSetting notificationSetting) {
         return notificationSettingJpaRepository.save(notificationSetting);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        notificationSettingJpaRepository.deleteByUserId(userId);
+    }
 }

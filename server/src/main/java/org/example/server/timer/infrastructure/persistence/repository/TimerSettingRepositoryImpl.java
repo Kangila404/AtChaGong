@@ -21,4 +21,9 @@ public class TimerSettingRepositoryImpl implements TimerSettingRepository {
     public TimerSetting save(TimerSetting timerSetting) {
         return timerSettingJpaRepository.save(timerSetting);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        timerSettingJpaRepository.deleteByUserId(userId);
+    }
 }

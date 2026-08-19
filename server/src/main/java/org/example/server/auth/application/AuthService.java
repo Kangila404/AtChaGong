@@ -18,6 +18,10 @@ import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
+import org.example.server.notification.domain.repositories.DeviceTokenRepository;
+import org.example.server.notification.domain.repositories.NotificationSettingRepository;
+import org.example.server.record.domain.repository.FocusRecordRepository;
+import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
@@ -49,6 +53,10 @@ public class AuthService {
     private final AuthAccountRepository authAccountRepository;
     private final List<SocialAuthProvider> socialAuthProviders;
     private final ProfileImgRepository profileImgRepository;
+    private final FocusRecordRepository focusRecordRepository;
+    private final TimerSettingRepository timerSettingRepository;
+    private final NotificationSettingRepository notificationSettingRepository;
+    private final DeviceTokenRepository deviceTokenRepository;
 
 
     @Transactional
@@ -67,6 +75,7 @@ public class AuthService {
 
     @Transactional
     public LoginResponse socialLogin(LoginRequest request) {
+        validateSocialLoginRequest(request);
 
         SocialAuthProvider provider = findProviderOrThrow(request.authType());
         SocialUserInfo socialUserInfo = provider.verify(request.credential());
@@ -77,6 +86,10 @@ public class AuthService {
         );
 
         User user = authAccount.getUser();
+
+        if (user.getUserStatus() == UserStatus.WITHDRAWN) {
+            rejoinWithdrawnUser(user);
+        }
 
         validateUserStatus(user.getUserStatus());
         user.updateLastLoginAt();
@@ -140,6 +153,20 @@ public class AuthService {
         return authAccountRepository.save(authAccount);
     }
 
+    private void rejoinWithdrawnUser(User user) {
+        Long userId = user.getId();
+
+        refreshTokenRepository.deleteByUserId(userId);
+        focusRecordRepository.deleteByUserId(userId);
+        timerSettingRepository.deleteByUserId(userId);
+        notificationSettingRepository.deleteByUserId(userId);
+        deviceTokenRepository.deleteByUserId(userId);
+
+        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
+        user.reactivateForRejoin(defaultProfileImg);
+    }
+
 
     // ============= 검증 메서드 모음 ============= //
 
@@ -153,7 +180,18 @@ public class AuthService {
         }
     }
 
-    // 2. 소셜 로그인 종류 검증
+    // 2. 소셜 로그인 요청 검증
+    private void validateSocialLoginRequest(LoginRequest request) {
+        if (request.authType() == null) {
+            throw new AuthException(AuthErrorCode.UNSUPPORTED_PROVIDER);
+        }
+
+        if (request.credential() == null || request.credential().isBlank()) {
+            throw new AuthException(AuthErrorCode.PROVIDER_TOKEN_REQUIRED);
+        }
+    }
+
+    // 3. 소셜 로그인 종류 검증
     private SocialAuthProvider findProviderOrThrow(AuthType authType) {
         return socialAuthProviders.stream()
             .filter(provider -> provider.supports() == authType)
@@ -161,7 +199,7 @@ public class AuthService {
             .orElseThrow(() -> new AuthException(AuthErrorCode.UNSUPPORTED_PROVIDER));
     }
 
-    // 3. 리프레시 토큰 폐기 여부 확인
+    // 4. 리프레시 토큰 폐기 여부 확인
     private void validateRefreshTokenRevoked(RefreshToken refreshToken){
         if(refreshToken.isRevoked()){
             throw new AuthException(AuthErrorCode.REFRESH_TOKEN_REVOKED);

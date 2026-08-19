@@ -72,11 +72,10 @@ public class User extends BaseEntity {
     // 1. 유저 생성
     public static User createSocialUser(ProfileImg defaultProfileImg) {
         String userId = UUID.randomUUID().toString();
-        String temporaryNickname = "사용자" + userId.replace("-", "").substring(0, 6);
 
         return User.builder()
             .userId(userId)
-            .nickname(temporaryNickname)
+            .nickname(createTemporaryNickname(userId))
             .userStatus(UserStatus.ACTIVE)
             .userRole(UserRole.USER)
             .onboardingCompleted(false)
@@ -106,6 +105,19 @@ public class User extends BaseEntity {
         this.deletedAt = LocalDateTime.now(KST);
     }
 
+    // 4-1. 탈퇴 회원 재가입 처리
+    public void reactivateForRejoin(ProfileImg defaultProfileImg) {
+        if (this.userStatus != UserStatus.WITHDRAWN) {
+            return;
+        }
+
+        this.nickname = createTemporaryNickname(this.userId);
+        this.userStatus = UserStatus.ACTIVE;
+        this.onboardingCompleted = false;
+        this.deletedAt = null;
+        this.profileImg = defaultProfileImg;
+    }
+
     // 5. 온보딩 처리
     public void  completeOnboarding(){
         this.onboardingCompleted = true;
@@ -114,5 +126,10 @@ public class User extends BaseEntity {
     // 6. 프로필 이미지 업데이트
     public void updateProfile(ProfileImg profileImg){
         this.profileImg = profileImg;
+    }
+
+    private static String createTemporaryNickname(String userId) {
+        String normalizedUserId = userId.replace("-", "");
+        return "사용자" + normalizedUserId.substring(0, Math.min(6, normalizedUserId.length()));
     }
 }
