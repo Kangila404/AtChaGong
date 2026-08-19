@@ -18,6 +18,10 @@ import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
+import org.example.server.notification.domain.repositories.DeviceTokenRepository;
+import org.example.server.notification.domain.repositories.NotificationSettingRepository;
+import org.example.server.record.domain.repository.FocusRecordRepository;
+import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
@@ -49,6 +53,10 @@ public class AuthService {
     private final AuthAccountRepository authAccountRepository;
     private final List<SocialAuthProvider> socialAuthProviders;
     private final ProfileImgRepository profileImgRepository;
+    private final FocusRecordRepository focusRecordRepository;
+    private final TimerSettingRepository timerSettingRepository;
+    private final NotificationSettingRepository notificationSettingRepository;
+    private final DeviceTokenRepository deviceTokenRepository;
 
 
     @Transactional
@@ -78,6 +86,10 @@ public class AuthService {
         );
 
         User user = authAccount.getUser();
+
+        if (user.getUserStatus() == UserStatus.WITHDRAWN) {
+            rejoinWithdrawnUser(user);
+        }
 
         validateUserStatus(user.getUserStatus());
         user.updateLastLoginAt();
@@ -139,6 +151,20 @@ public class AuthService {
 
         AuthAccount authAccount = AuthAccount.create(user, authType, providerId);
         return authAccountRepository.save(authAccount);
+    }
+
+    private void rejoinWithdrawnUser(User user) {
+        Long userId = user.getId();
+
+        refreshTokenRepository.deleteByUserId(userId);
+        focusRecordRepository.deleteByUserId(userId);
+        timerSettingRepository.deleteByUserId(userId);
+        notificationSettingRepository.deleteByUserId(userId);
+        deviceTokenRepository.deleteByUserId(userId);
+
+        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
+        user.reactivateForRejoin(defaultProfileImg);
     }
 
 

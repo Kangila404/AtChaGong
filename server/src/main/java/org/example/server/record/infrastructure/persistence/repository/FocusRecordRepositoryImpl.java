@@ -49,4 +49,9 @@ public class FocusRecordRepositoryImpl implements FocusRecordRepository {
     public List<FocusRecord> findAllByUserIdAndFocusedDate(Long userId, LocalDate focusedDate) {
         return focusRecordJpaRepository.findAllByUserIdAndFocusedDate(userId, focusedDate);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        focusRecordJpaRepository.deleteByUserId(userId);
+    }
 }
