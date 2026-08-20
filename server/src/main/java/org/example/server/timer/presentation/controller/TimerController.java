@@ -1,7 +1,5 @@
 package org.example.server.timer.presentation.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
@@ -17,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "타이머 API")
 @RestController
 @RequestMapping("/api/v1/timer/settings")
 @RequiredArgsConstructor
@@ -25,14 +22,12 @@ public class TimerController {
 
     private final TimerSettingService timerSettingService;
 
-    @Operation(summary = "타이머 설정 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<TimerSettingResponse>> getSetting(@AuthenticationPrincipal String userId){
         TimerSettingResponse response = timerSettingService.getSetting(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "타이머 설정 저장")
     @PutMapping
     public ResponseEntity<ApiResponse<SaveTimerResponse>> saveSetting(
         @AuthenticationPrincipal String userId,

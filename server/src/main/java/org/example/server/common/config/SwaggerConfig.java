@@ -1,3 +1,4 @@
+/*
 package org.example.server.common.config;
 
 import io.swagger.v3.oas.models.Components;
@@ -40,3 +41,4 @@ public class SwaggerConfig {
             .addSecurityItem(securityRequirement);
     }
 }
+*/

@@ -1,6 +1,5 @@
 package org.example.server.auth.presentation.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.server.auth.application.AuthService;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Auth API")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

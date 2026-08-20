@@ -1,7 +1,5 @@
 package org.example.server.statistics.presentation.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.statistics.application.StatisticsService;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "통계 API")
 @RestController
 @RequestMapping("/api/v1/statistics")
 @RequiredArgsConstructor
@@ -23,7 +20,6 @@ public class StatisticsController {
 
     private final StatisticsService statisticsService;
 
-    @Operation(summary = "전체 통계 요약")
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<StatisticsResponse>> getSummary(
         @AuthenticationPrincipal String userId,
@@ -33,7 +29,6 @@ public class StatisticsController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "월별 통계 요약")
     @GetMapping("/calendar/{year}/{month}")
     public ResponseEntity<ApiResponse<CalendarResponse>> getMonth(
         @AuthenticationPrincipal String userId,
