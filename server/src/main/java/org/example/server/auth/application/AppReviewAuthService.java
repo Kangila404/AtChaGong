@@ -16,7 +16,9 @@ import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.example.server.auth.presentation.dto.req.AppReviewLoginRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
@@ -29,24 +31,34 @@ import org.springframework.transaction.annotation.Transactional;
 public class AppReviewAuthService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final String APP_REVIEW_LOGIN_ID = "app-review";
-    private static final String APP_REVIEW_PASSWORD = "atchagong-review-2026";
-    private static final String APP_REVIEW_USER_ID = "app-review";
+    private static final Long DEFAULT_PROFILE_IMG_ID = 1L;
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final ProfileImgRepository profileImgRepository;
 
     @Value("${spring.jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
+
+    @Value("${app-review.login-id:app-review}")
+    private String appReviewLoginId;
+
+    @Value("${app-review.password:}")
+    private String appReviewPassword;
+
+    @Value("${app-review.user-id:app-review}")
+    private String appReviewUserId;
 
     @Transactional
     public LoginResponse login(AppReviewLoginRequest request) {
         validateCredentials(request);
 
-        User user = userRepository.findByUserId(APP_REVIEW_USER_ID)
+        User user = userRepository.findByUserId(appReviewUserId)
             .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-        validateUserStatus(user.getUserStatus());
+        restoreWithdrawnReviewUser(user);
+        validateActiveUser(user.getUserStatus());
+        user.completeOnboarding();
         user.updateLastLoginAt();
 
         String accessToken = jwtTokenProvider.createAccessToken(
@@ -59,13 +71,24 @@ public class AppReviewAuthService {
     }
 
     private void validateCredentials(AppReviewLoginRequest request) {
-        if (!constantTimeEquals(request.loginId(), APP_REVIEW_LOGIN_ID)
-            || !constantTimeEquals(request.password(), APP_REVIEW_PASSWORD)) {
+        if (appReviewPassword == null || appReviewPassword.isBlank()
+            || !constantTimeEquals(request.loginId(), appReviewLoginId)
+            || !constantTimeEquals(request.password(), appReviewPassword)) {
             throw new AuthException(AuthErrorCode.INVALID_PROVIDER_TOKEN);
         }
     }
 
-    private void validateUserStatus(UserStatus userStatus) {
+    private void restoreWithdrawnReviewUser(User user) {
+        if (user.getUserStatus() != UserStatus.WITHDRAWN) {
+            return;
+        }
+
+        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
+            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
+        user.reactivateForRejoin(defaultProfileImg);
+    }
+
+    private void validateActiveUser(UserStatus userStatus) {
         if (userStatus != UserStatus.ACTIVE) {
             throw new UserException(UserErrorCode.SUSPENDED_USER);
         }
