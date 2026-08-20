@@ -30,6 +30,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      APP_REVIEW_LOGIN_ID: ${APP_REVIEW_LOGIN_ID:-app-review}
+      APP_REVIEW_PASSWORD: ${APP_REVIEW_PASSWORD}
+      APP_REVIEW_USER_ID: ${APP_REVIEW_USER_ID:-app-review}
       LOKI_URL: http://loki:3100/loki/api/v1/push
       TZ: Asia/Seoul
     depends_on:
