@@ -33,11 +33,6 @@ oauth:
   apple:
     client-id: ${APPLE_CLIENT_ID}
 
-app-review:
-  login-id: ${APP_REVIEW_LOGIN_ID:app-review}
-  password: ${APP_REVIEW_PASSWORD:}
-  user-id: ${APP_REVIEW_USER_ID:app-review}
-
 
 management:
   endpoints:
