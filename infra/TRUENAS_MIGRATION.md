@@ -77,7 +77,17 @@ NAS deploy:
 - `NAS_SSH_KEY`
 - `NAS_APP_DIR` - usually `/mnt/.ix-apps/app_mounts/dockge/stacks/atchagong`
 
-Application:
+## Required NAS `.env`
+
+Keep production application secrets on the NAS stack itself:
+
+```text
+/mnt/.ix-apps/app_mounts/dockge/stacks/atchagong/.env
+```
+
+The GitHub Actions workflow does not create or overwrite this file. It only passes the newly built `SERVER_IMAGE` value for the current deploy command.
+
+Required values:
 
 - `MYSQL_ROOT_PASSWORD`
 - `MYSQL_DATABASE`
