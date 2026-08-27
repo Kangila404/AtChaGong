@@ -1,13 +1,6 @@
 name: Server CD
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'server/**'
-      - 'infra/**'
-      - '.github/workflows/server-cd.yml'
   workflow_dispatch:
 
 concurrency:
