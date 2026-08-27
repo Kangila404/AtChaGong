@@ -92,4 +92,4 @@ jobs:
           SERVER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/atchagong-server:${{ github.sha }}
         run: |
           ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "test -f '${NAS_APP_DIR}/.env'"
-          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "cd '${NAS_APP_DIR}' && sudo env SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env -f compose.yaml pull && sudo env SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env -f compose.yaml up -d && sudo docker image prune -f"
+          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "cd '${NAS_APP_DIR}' && if grep -q '^SERVER_IMAGE=' .env; then sed -i 's#^SERVER_IMAGE=.*#SERVER_IMAGE=${SERVER_IMAGE}#' .env; else printf '\nSERVER_IMAGE=%s\n' '${SERVER_IMAGE}' >> .env; fi && sudo docker compose --env-file .env -f compose.yaml pull && sudo docker compose --env-file .env -f compose.yaml up -d && sudo docker image prune -f"
