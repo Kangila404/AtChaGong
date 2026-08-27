@@ -85,7 +85,7 @@ Keep production application secrets on the NAS stack itself:
 /mnt/.ix-apps/app_mounts/dockge/stacks/atchagong/.env
 ```
 
-The GitHub Actions workflow does not create or overwrite this file. It only passes the newly built `SERVER_IMAGE` value for the current deploy command.
+The GitHub Actions workflow does not create or overwrite this file. During deploy, it only updates the non-secret `SERVER_IMAGE` line and leaves the rest of the file intact.
 
 Required values:
 
