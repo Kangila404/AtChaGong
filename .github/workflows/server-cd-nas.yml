@@ -1,0 +1,127 @@
+name: Server CD NAS
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: server-nas
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/atchagong-server
+
+jobs:
+  build-and-deploy-to-nas:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x server/gradlew
+
+      - name: Test
+        run: cd server && ./gradlew test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Connect to tailnet
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          hostname: github-actions-atchagong-cd
+          ping: ${{ secrets.NAS_HOST }}
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.NAS_SSH_KEY }}" > ~/.ssh/atchagong-nas
+          chmod 600 ~/.ssh/atchagong-nas
+
+      - name: Prepare NAS stack files
+        env:
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          NAS_USER: ${{ secrets.NAS_USER }}
+          NAS_APP_DIR: ${{ secrets.NAS_APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "mkdir -p '${NAS_APP_DIR}/prometheus' '${NAS_APP_DIR}/loki' '${NAS_APP_DIR}/grafana/provisioning' '${NAS_APP_DIR}/backups/mysql' && (sudo docker network inspect proxy >/dev/null 2>&1 || sudo docker network create proxy)"
+          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new infra/docker-compose.nas.yml "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/compose.yaml"
+          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -r infra/prometheus "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/"
+          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -r infra/loki "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/"
+          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -r infra/grafana/provisioning "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/grafana/"
+
+      - name: Deploy on NAS
+        env:
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          NAS_USER: ${{ secrets.NAS_USER }}
+          NAS_APP_DIR: ${{ secrets.NAS_APP_DIR }}
+          SERVER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/atchagong-server:${{ github.sha }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          APPLE_CLIENT_ID: ${{ secrets.APPLE_CLIENT_ID }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          APP_REVIEW_LOGIN_ID: ${{ secrets.APP_REVIEW_LOGIN_ID }}
+          APP_REVIEW_PASSWORD: ${{ secrets.APP_REVIEW_PASSWORD }}
+          APP_REVIEW_USER_ID: ${{ secrets.APP_REVIEW_USER_ID }}
+          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
+        run: |
+          {
+            echo "SERVER_IMAGE=${SERVER_IMAGE}"
+            echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+            echo "MYSQL_DATABASE=${MYSQL_DATABASE}"
+            echo "MYSQL_USER=${MYSQL_USER}"
+            echo "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+            echo "JWT_SECRET=${JWT_SECRET}"
+            echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+            echo "APPLE_CLIENT_ID=${APPLE_CLIENT_ID}"
+            echo "KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}"
+            echo "APP_REVIEW_LOGIN_ID=${APP_REVIEW_LOGIN_ID}"
+            echo "APP_REVIEW_PASSWORD=${APP_REVIEW_PASSWORD}"
+            echo "APP_REVIEW_USER_ID=${APP_REVIEW_USER_ID}"
+            echo "GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}"
+            echo "GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}"
+            echo "GRAFANA_PORT=${GRAFANA_PORT:-30001}"
+          } > .env.nas
+          chmod 600 .env.nas
+          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new .env.nas "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/.env"
+          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "cd '${NAS_APP_DIR}' && sudo docker compose --env-file .env -f compose.yaml pull && sudo docker compose --env-file .env -f compose.yaml up -d && sudo docker image prune -f"
