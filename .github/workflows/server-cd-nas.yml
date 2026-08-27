@@ -90,38 +90,6 @@ jobs:
           NAS_USER: ${{ secrets.NAS_USER }}
           NAS_APP_DIR: ${{ secrets.NAS_APP_DIR }}
           SERVER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/atchagong-server:${{ github.sha }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER: ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          APPLE_CLIENT_ID: ${{ secrets.APPLE_CLIENT_ID }}
-          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
-          APP_REVIEW_LOGIN_ID: ${{ secrets.APP_REVIEW_LOGIN_ID }}
-          APP_REVIEW_PASSWORD: ${{ secrets.APP_REVIEW_PASSWORD }}
-          APP_REVIEW_USER_ID: ${{ secrets.APP_REVIEW_USER_ID }}
-          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-          GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
         run: |
-          {
-            echo "SERVER_IMAGE=${SERVER_IMAGE}"
-            echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
-            echo "MYSQL_DATABASE=${MYSQL_DATABASE}"
-            echo "MYSQL_USER=${MYSQL_USER}"
-            echo "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
-            echo "JWT_SECRET=${JWT_SECRET}"
-            echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
-            echo "APPLE_CLIENT_ID=${APPLE_CLIENT_ID}"
-            echo "KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}"
-            echo "APP_REVIEW_LOGIN_ID=${APP_REVIEW_LOGIN_ID}"
-            echo "APP_REVIEW_PASSWORD=${APP_REVIEW_PASSWORD}"
-            echo "APP_REVIEW_USER_ID=${APP_REVIEW_USER_ID}"
-            echo "GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}"
-            echo "GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}"
-            echo "GRAFANA_PORT=${GRAFANA_PORT:-30001}"
-          } > .env.nas
-          chmod 600 .env.nas
-          scp -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new .env.nas "${NAS_USER}@${NAS_HOST}:${NAS_APP_DIR}/.env"
-          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "cd '${NAS_APP_DIR}' && sudo docker compose --env-file .env -f compose.yaml pull && sudo docker compose --env-file .env -f compose.yaml up -d && sudo docker image prune -f"
+          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "test -f '${NAS_APP_DIR}/.env'"
+          ssh -i ~/.ssh/atchagong-nas -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new "${NAS_USER}@${NAS_HOST}" "cd '${NAS_APP_DIR}' && sudo env SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env -f compose.yaml pull && sudo env SERVER_IMAGE='${SERVER_IMAGE}' docker compose --env-file .env -f compose.yaml up -d && sudo docker image prune -f"
