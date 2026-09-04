@@ -7,6 +7,7 @@ import org.example.server.auth.infrastructure.jwt.JwtFilter;
 import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -28,7 +29,14 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                 .requestMatchers("/api/v1/auth/**").permitAll()
+
+                // 비회원 허용 영역
+                .requestMatchers(HttpMethod.GET, "/api/v1/beverages").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/notices/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/profiles").permitAll()
+
                 .requestMatchers(
                     "/swagger-ui.html",
                     "/swagger-ui/**",

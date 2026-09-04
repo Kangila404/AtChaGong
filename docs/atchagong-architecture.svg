@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .section { fill: #ffffff; stroke-width: 2; rx: 10; }
+      .blue { stroke: #2563eb; }
+      .green { stroke: #16a34a; }
+      .purple { stroke: #7c3aed; }
+      .orange { stroke: #ea580c; }
+      .gray { stroke: #64748b; }
+      .box { fill: #ffffff; stroke-width: 1.5; rx: 9; }
+      .soft-blue { fill: #eff6ff; stroke: #3b82f6; }
+      .soft-green { fill: #f0fdf4; stroke: #22c55e; }
+      .soft-purple { fill: #faf5ff; stroke: #a855f7; }
+      .soft-orange { fill: #fff7ed; stroke: #f97316; }
+      .soft-gray { fill: #f8fafc; stroke: #94a3b8; }
+      .title { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .section-title { font: 700 17px Arial, sans-serif; }
+      .label { font: 700 15px Arial, sans-serif; fill: #0f172a; }
+      .small { font: 13px Arial, sans-serif; fill: #1e293b; }
+      .tiny { font: 12px Arial, sans-serif; fill: #334155; }
+      .muted { fill: #64748b; }
+      .port { font: 700 15px Arial, sans-serif; fill: #15803d; }
+      .pill { fill: #2563eb; rx: 5; }
+      .pill-text { font: 700 14px Arial, sans-serif; fill: #ffffff; }
+      .arrow { stroke: #0f172a; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke: #7c3aed; stroke-width: 2; stroke-dasharray: 6 5; fill: none; marker-end: url(#purplearrow); }
+      .iconText { font: 700 34px Arial, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#0f172a"/>
+    </marker>
+    <marker id="purplearrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="1000"/>
+
+  <!-- Client layer -->
+  <rect x="12" y="12" width="1030" height="126" class="section blue"/>
+  <text x="30" y="38" class="section-title" fill="#1d4ed8">CLIENT LAYER</text>
+  <rect x="170" y="38" width="260" height="78" class="box soft-blue"/>
+  <circle cx="222" cy="77" r="28" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <text x="222" y="79" class="iconText" fill="#2563eb">APP</text>
+  <text x="285" y="68" class="label">Mobile Client</text>
+  <text x="285" y="91" class="small">Pomodoro / Focus Timer App</text>
+  <rect x="520" y="38" width="260" height="78" class="box soft-blue"/>
+  <circle cx="570" cy="77" r="28" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <text x="570" y="80" class="iconText" fill="#2563eb">API</text>
+  <text x="633" y="68" class="label">API Domain</text>
+  <text x="633" y="91" class="small">atchagong.kro.kr</text>
+  <text x="845" y="75" class="label">HTTPS</text>
+  <text x="845" y="98" class="port">443</text>
+  <path d="M780 77 H830" class="arrow"/>
+
+  <!-- AWS / Compose area -->
+  <rect x="12" y="150" width="1030" height="624" class="section blue"/>
+  <text x="32" y="185" class="section-title" fill="#0f172a">AWS EC2</text>
+  <text x="32" y="209" class="small">Ubuntu · Docker Compose</text>
+  <text x="914" y="188" class="label" fill="#2563eb">atchagong-prod</text>
+
+  <!-- Caddy -->
+  <rect x="250" y="184" width="660" height="116" class="box soft-green"/>
+  <circle cx="315" cy="242" r="34" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <image href="assets/tech-icons/caddy.svg" x="294" y="221" width="42" height="42"/>
+  <text x="374" y="220" class="label" fill="#166534">Caddy Gateway</text>
+  <text x="492" y="220" class="small">(Container)</text>
+  <text x="374" y="247" class="small">• HTTPS 처리</text>
+  <text x="374" y="271" class="small">• Reverse Proxy to server:8080</text>
+  <line x1="698" y1="205" x2="698" y2="280" stroke="#86efac"/>
+  <text x="730" y="229" class="label" fill="#166534">Ports</text>
+  <text x="730" y="254" class="small">• 80 HTTP</text>
+  <text x="730" y="276" class="small">• 443 HTTPS</text>
+
+  <path d="M650 116 V184" class="arrow"/>
+
+  <!-- Backend -->
+  <rect x="554" y="354" width="450" height="148" class="box soft-green"/>
+  <circle cx="620" cy="428" r="36" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <image href="assets/tech-icons/springboot.svg" x="597" y="405" width="46" height="46"/>
+  <text x="676" y="390" class="label" fill="#166534">Spring Boot Backend</text>
+  <text x="842" y="390" class="small">(Container)</text>
+  <text x="676" y="419" class="small">• Java 21 · Spring Boot 4.1.0</text>
+  <text x="676" y="443" class="small">• REST API · JWT · JPA</text>
+  <text x="676" y="467" class="small">• Flyway · Actuator · Loki Appender</text>
+  <line x1="918" y1="383" x2="918" y2="474" stroke="#86efac"/>
+  <text x="946" y="420" class="port">Port</text>
+  <text x="946" y="446" class="port">8080</text>
+
+  <rect x="685" y="321" width="80" height="28" class="pill"/>
+  <text x="725" y="341" class="pill-text" text-anchor="middle">/api</text>
+  <path d="M580 300 V354" class="arrow"/>
+  <path d="M580 300 H775 V354" class="arrow"/>
+
+  <!-- MySQL -->
+  <rect x="576" y="540" width="424" height="104" class="box soft-orange"/>
+  <circle cx="628" cy="592" r="30" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+  <image href="assets/tech-icons/mysql.svg" x="607" y="571" width="42" height="42"/>
+  <text x="684" y="574" class="label" fill="#9a3412">MySQL</text>
+  <text x="738" y="574" class="small">(Container)</text>
+  <text x="684" y="600" class="small">• MySQL 8.0 · Application Database</text>
+  <text x="684" y="624" class="small">• Docker volume: mysql-data</text>
+  <line x1="884" y1="560" x2="884" y2="627" stroke="#fdba74"/>
+  <text x="912" y="590" class="port" fill="#c2410c">Port</text>
+  <text x="912" y="616" class="port" fill="#c2410c">3306</text>
+  <path d="M780 502 V540" class="arrow"/>
+
+  <!-- Monitoring -->
+  <rect x="44" y="668" width="958" height="82" class="box soft-purple"/>
+  <text x="382" y="691" class="label" fill="#6b21a8">Monitoring Stack</text>
+  <text x="526" y="691" class="small">(All Containers)</text>
+  <rect x="68" y="702" width="236" height="34" class="box soft-purple"/>
+  <image href="assets/tech-icons/prometheus.svg" x="86" y="707" width="24" height="24"/>
+  <text x="120" y="724" class="small">Prometheus · 127.0.0.1:9090</text>
+  <rect x="356" y="702" width="236" height="34" class="box soft-purple"/>
+  <text x="392" y="724" class="small">Loki · 127.0.0.1:3100</text>
+  <rect x="652" y="702" width="300" height="34" class="box soft-purple"/>
+  <image href="assets/tech-icons/grafana.svg" x="670" y="707" width="24" height="24"/>
+  <text x="704" y="724" class="small">Grafana · localhost:3000 via SSH tunnel</text>
+  <path d="M304 719 H356" class="dashed"/>
+  <path d="M592 719 H652" class="dashed"/>
+  <path d="M610 502 C500 575, 180 560, 180 702" class="dashed"/>
+  <path d="M590 502 C470 590, 474 590, 474 702" class="dashed"/>
+
+  <!-- Backend domain -->
+  <rect x="1060" y="12" width="528" height="474" class="section green"/>
+  <text x="1080" y="38" class="section-title" fill="#15803d">BACKEND DOMAIN</text>
+  <rect x="1082" y="56" width="482" height="92" class="box soft-green"/>
+  <text x="1112" y="88" class="label" fill="#166534">계정 · 인증</text>
+  <text x="1132" y="112" class="tiny">• user · authAccount · refreshToken</text>
+  <text x="1132" y="132" class="tiny">소셜 로그인, JWT 토큰 관리</text>
+  <rect x="1082" y="164" width="482" height="98" class="box soft-blue"/>
+  <text x="1112" y="196" class="label" fill="#1d4ed8">집중 타이머</text>
+  <text x="1132" y="224" class="tiny">• timerSetting</text>
+  <text x="1288" y="224" class="tiny">사용자별 타이머 설정 관리</text>
+  <rect x="1082" y="278" width="482" height="116" class="box soft-purple"/>
+  <text x="1112" y="310" class="label" fill="#6b21a8">기록 · 통계</text>
+  <text x="1132" y="338" class="tiny">• focusRecord</text>
+  <text x="1288" y="338" class="tiny">집중 완료 기록 저장</text>
+  <text x="1132" y="365" class="tiny">• statistics</text>
+  <text x="1288" y="365" class="tiny">요약, 캘린더 통계 조회</text>
+  <rect x="1082" y="410" width="482" height="56" class="box soft-orange"/>
+  <text x="1112" y="443" class="label" fill="#c2410c">운영 · 공통</text>
+  <text x="1280" y="443" class="tiny">공지, 관리자, 알림 설정, 음료, 프로필 이미지</text>
+
+  <!-- External services -->
+  <rect x="1060" y="506" width="528" height="142" class="section blue"/>
+  <text x="1080" y="532" class="section-title" fill="#1d4ed8">EXTERNAL SERVICES</text>
+  <rect x="1085" y="552" width="215" height="72" class="box soft-blue"/>
+  <text x="1146" y="578" class="label" fill="#1d4ed8">OAuth Login</text>
+  <image href="assets/tech-icons/google.svg" x="1118" y="590" width="26" height="26"/>
+  <image href="assets/tech-icons/apple.svg" x="1168" y="590" width="26" height="26"/>
+  <image href="assets/tech-icons/kakaotalk.svg" x="1218" y="590" width="26" height="26"/>
+  <rect x="1326" y="552" width="215" height="72" class="box soft-blue"/>
+  <text x="1378" y="578" class="label" fill="#1d4ed8">Storage / Registry</text>
+  <image href="assets/tech-icons/amazons3.svg" x="1378" y="590" width="28" height="28"/>
+  <image href="assets/tech-icons/docker.svg" x="1430" y="590" width="32" height="32"/>
+
+  <!-- CI/CD -->
+  <rect x="12" y="792" width="402" height="152" class="section purple"/>
+  <text x="32" y="820" class="section-title" fill="#6b21a8">CI / CD PIPELINE</text>
+  <rect x="36" y="842" width="130" height="78" class="box soft-gray"/>
+  <image href="assets/tech-icons/githubactions.svg" x="54" y="852" width="36" height="36"/>
+  <text x="98" y="868" class="label">GitHub</text>
+  <text x="98" y="894" class="tiny">Actions</text>
+  <path d="M166 881 H222" class="arrow"/>
+  <rect x="222" y="842" width="86" height="78" class="box soft-blue"/>
+  <image href="assets/tech-icons/docker.svg" x="238" y="852" width="36" height="36"/>
+  <text x="244" y="906" class="tiny">Docker Hub</text>
+  <path d="M308 881 H346" class="arrow"/>
+  <rect x="346" y="842" width="46" height="78" class="box soft-orange"/>
+  <text x="369" y="876" class="label" text-anchor="middle">EC2</text>
+  <text x="32" y="934" class="tiny">Test · SpotBugs · PMD · Build Image · SSH Deploy</text>
+
+  <!-- Backup -->
+  <rect x="432" y="792" width="350" height="152" class="section orange"/>
+  <text x="452" y="820" class="section-title" fill="#c2410c">BACKUP</text>
+  <rect x="458" y="842" width="284" height="78" class="box soft-orange"/>
+  <image href="assets/tech-icons/amazons3.svg" x="486" y="852" width="38" height="38"/>
+  <text x="536" y="870" class="label">MySQL Backup to S3</text>
+  <text x="486" y="895" class="tiny">systemd timer · mysqldump · gzip</text>
+  <text x="486" y="916" class="tiny">Local retention: 7 days</text>
+
+  <!-- Infrastructure config -->
+  <rect x="800" y="792" width="414" height="152" class="section blue"/>
+  <text x="820" y="820" class="section-title" fill="#1d4ed8">INFRASTRUCTURE &amp; CONFIG</text>
+  <text x="838" y="858" class="small">• EC2 Ubuntu</text>
+  <text x="838" y="884" class="small">• Docker Compose</text>
+  <text x="838" y="910" class="small">• Caddy HTTPS / Reverse Proxy</text>
+  <text x="1038" y="858" class="small">• GitHub Secrets</text>
+  <text x="1038" y="884" class="small">• .env.prod</text>
+  <text x="1038" y="910" class="small">• S3 Backup Bucket</text>
+
+  <!-- Tech stack -->
+  <rect x="1232" y="792" width="356" height="152" class="section green"/>
+  <text x="1252" y="820" class="section-title" fill="#15803d">TECH STACK SUMMARY</text>
+  <image href="assets/tech-icons/springboot.svg" x="1262" y="846" width="30" height="30"/>
+  <text x="1298" y="866" class="tiny">Spring Boot</text>
+  <image href="assets/tech-icons/java.svg" x="1370" y="846" width="30" height="30"/>
+  <text x="1406" y="866" class="tiny">Java 21</text>
+  <image href="assets/tech-icons/mysql.svg" x="1472" y="846" width="30" height="30"/>
+  <text x="1508" y="866" class="tiny">MySQL</text>
+  <image href="assets/tech-icons/docker.svg" x="1262" y="898" width="30" height="30"/>
+  <text x="1298" y="918" class="tiny">Docker</text>
+  <image href="assets/tech-icons/prometheus.svg" x="1370" y="898" width="30" height="30"/>
+  <text x="1406" y="918" class="tiny">Prometheus</text>
+  <image href="assets/tech-icons/grafana.svg" x="1472" y="898" width="30" height="30"/>
+  <text x="1508" y="918" class="tiny">Grafana</text>
+
+  <!-- Footer -->
+  <rect x="12" y="958" width="1576" height="30" fill="#fff7ed" stroke="#fed7aa" rx="8"/>
+  <text x="30" y="978" class="tiny">Port Summary · Public: 80, 443 · Internal: server 8080, MySQL 3306 · Localhost-bound: Prometheus 9090, Loki 3100, Grafana 3000</text>
+</svg>
