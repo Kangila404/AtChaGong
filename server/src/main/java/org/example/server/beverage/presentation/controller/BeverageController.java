@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.application.BeverageService;
-import org.example.server.beverage.presentation.dto.res.BeverageResponse;
+import org.example.server.beverage.presentation.dto.res.BeverageSaleResponse;
 import org.example.server.common.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,10 +20,10 @@ public class BeverageController {
 
     private final BeverageService beverageService;
 
-    @Operation(summary = "음료 조회 API")
+    @Operation(summary = "판매 음료 목록 조회 API")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BeverageResponse>>> getBeverages(){
-        List<BeverageResponse> response = beverageService.getBeverages();
+    public ResponseEntity<ApiResponse<List<BeverageSaleResponse>>> getBeverages() {
+        List<BeverageSaleResponse> response = beverageService.getBeverages();
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
