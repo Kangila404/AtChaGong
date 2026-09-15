@@ -2,6 +2,7 @@ package org.example.server.beverage.infrastructure.persistence.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.example.server.beverage.domain.enums.BeverageSaleStatus;
 import org.example.server.beverage.domain.models.Beverage;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface BeverageJpaRepository extends JpaRepository<Beverage, Long> {
+    Optional<Beverage> findFirstByIsDefaultTrueOrderByIdAsc();
+
     @Query("""
         SELECT beverage
         FROM Beverage beverage

@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.example.server.beverage.application.UserBeverageService;
+import org.example.server.beverage.presentation.dto.res.UserBeverageResponse;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.user.application.UserService;
 import org.example.server.user.presentation.dto.req.OnboardingRequest;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserBeverageService userBeverageService;
 
     @Operation(summary = "유저 정보 조회 API")
     @GetMapping("/me")
@@ -43,6 +46,15 @@ public class UserController {
     ){
         UserMeResponse response = userService.getMe(userId);
         return ResponseEntity.ok(ApiResponse.success((response)));
+    }
+
+    @Operation(summary = "내 보유 음료 목록 조회 API")
+    @GetMapping("/me/beverages")
+    public ResponseEntity<ApiResponse<List<UserBeverageResponse>>> getUserBeverages(
+        @AuthenticationPrincipal String userId
+    ) {
+        List<UserBeverageResponse> response = userBeverageService.getUserBeverages(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "닉네임 갱신 API")
