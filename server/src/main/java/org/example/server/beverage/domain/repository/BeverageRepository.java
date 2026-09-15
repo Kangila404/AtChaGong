@@ -7,6 +7,7 @@ import org.example.server.beverage.domain.models.Beverage;
 
 public interface BeverageRepository {
     Optional<Beverage> findById(Long id);
+    Optional<Beverage> findDefault();
     List<Beverage> findAll();
     List<Beverage> findAllAvailableForSale(LocalDateTime now);
     boolean existsById(Long id);

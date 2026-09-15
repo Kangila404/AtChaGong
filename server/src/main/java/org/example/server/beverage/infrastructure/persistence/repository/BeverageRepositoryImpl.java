@@ -21,6 +21,11 @@ public class BeverageRepositoryImpl implements BeverageRepository {
     }
 
     @Override
+    public Optional<Beverage> findDefault() {
+        return beverageJpaRepository.findFirstByIsDefaultTrueOrderByIdAsc();
+    }
+
+    @Override
     public List<Beverage> findAll() {
         return beverageJpaRepository.findAll();
     }
