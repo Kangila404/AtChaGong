@@ -15,6 +15,7 @@ public enum RecordErrorCode implements ErrorCode {
     INCOMPLETE_FOCUS(HttpStatus.BAD_REQUEST, "완료되지 않은 집중 기록입니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, "날짜가 올바르지 않습니다."),
     BEVERAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "음료를 찾을 수 없습니다."),
+    BEVERAGE_NOT_OWNED(HttpStatus.FORBIDDEN, "보유하지 않은 음료입니다."),
     DUPLICATE_FOCUS_RECORD(HttpStatus.CONFLICT, "이미 저장된 집중 기록입니다.");
 
     private final HttpStatus status;
