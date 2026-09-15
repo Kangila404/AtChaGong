@@ -1,6 +1,7 @@
 package org.example.server.beverage.infrastructure.persistence.repository;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
@@ -15,6 +16,11 @@ public class UserBeverageRepositoryImpl implements UserBeverageRepository {
     @Override
     public List<UserBeverage> findAllByUserId(Long userId) {
         return userBeverageJpaRepository.findAllByUserId(userId);
+    }
+
+    @Override
+    public Optional<UserBeverage> findByUserIdAndBeverageId(Long userId, Long beverageId) {
+        return userBeverageJpaRepository.findByUser_IdAndBeverage_Id(userId, beverageId);
     }
 
     @Override

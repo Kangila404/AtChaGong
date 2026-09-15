@@ -29,6 +29,8 @@ import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.beverage.application.UserBeverageService;
+import org.example.server.beverage.application.SelectedBeverageService;
+import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
 import org.example.server.record.domain.repository.FocusRecordRepository;
@@ -93,6 +95,9 @@ class AuthServiceTest {
     @Mock
     private UserBeverageService userBeverageService;
 
+    @Mock
+    private SelectedBeverageService selectedBeverageService;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -106,7 +111,8 @@ class AuthServiceTest {
             timerSettingRepository,
             notificationSettingRepository,
             deviceTokenRepository,
-            userBeverageService
+            userBeverageService,
+            selectedBeverageService
         );
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
@@ -138,6 +144,7 @@ class AuthServiceTest {
     @DisplayName("신규 소셜 계정으로 로그인하면 사용자와 인증 계정을 생성하고 토큰을 발급한다")
     void socialLoginWithNewAccountCreatesUserAndAuthAccount() {
         User persistedUser = user(UserStatus.ACTIVE);
+        UserBeverage defaultOwnership = org.mockito.Mockito.mock(UserBeverage.class);
         ProfileImg defaultProfileImg = ProfileImg.builder()
             .id(DEFAULT_PROFILE_IMG_ID)
             .name("북극곰")
@@ -150,6 +157,7 @@ class AuthServiceTest {
         given(profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)).willReturn(Optional.of(defaultProfileImg));
         given(userRepository.save(any(User.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
+        given(userBeverageService.grantDefaultBeverage(any(User.class))).willReturn(defaultOwnership);
         given(authAccountRepository.save(any(AuthAccount.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
         given(jwtTokenProvider.createAccessToken(any(String.class), org.mockito.ArgumentMatchers.eq(UserRole.USER.name())))
@@ -171,6 +179,7 @@ class AuthServiceTest {
         assertThat(savedUser.isOnboardingCompleted()).isFalse();
         assertThat(savedUser.getProfileImg()).isEqualTo(defaultProfileImg);
         verify(userBeverageService).grantDefaultBeverage(savedUser);
+        verify(selectedBeverageService).selectDefaultBeverage(savedUser, defaultOwnership);
 
         ArgumentCaptor<AuthAccount> authAccountCaptor = ArgumentCaptor.forClass(AuthAccount.class);
         verify(authAccountRepository).save(authAccountCaptor.capture());
@@ -240,6 +249,7 @@ class AuthServiceTest {
     @DisplayName("탈퇴한 사용자가 같은 소셜 계정으로 로그인하면 재가입 처리하고 데이터를 초기화한다")
     void socialLoginWithWithdrawnUserRejoinsAndClearsUserData() {
         User withdrawnUser = user(UserStatus.WITHDRAWN);
+        UserBeverage defaultOwnership = org.mockito.Mockito.mock(UserBeverage.class);
         ProfileImg defaultProfileImg = ProfileImg.builder()
             .id(DEFAULT_PROFILE_IMG_ID)
             .name("북극곰")
@@ -250,6 +260,7 @@ class AuthServiceTest {
         given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
             .willReturn(Optional.of(AuthAccount.create(withdrawnUser, AuthType.KAKAO, "provider-1")));
         given(profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)).willReturn(Optional.of(defaultProfileImg));
+        given(userBeverageService.resetToDefaultBeverage(withdrawnUser)).willReturn(defaultOwnership);
         given(jwtTokenProvider.createAccessToken(USER_ID, UserRole.USER.name())).willReturn("access-token");
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(withdrawnUser));
         given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("refresh-token");
@@ -272,6 +283,8 @@ class AuthServiceTest {
         verify(notificationSettingRepository).deleteByUserId(USER_PK);
         verify(deviceTokenRepository).deleteByUserId(USER_PK);
         verify(userBeverageService).resetToDefaultBeverage(withdrawnUser);
+        verify(selectedBeverageService).clearSelection(withdrawnUser);
+        verify(selectedBeverageService).selectDefaultBeverage(withdrawnUser, defaultOwnership);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 

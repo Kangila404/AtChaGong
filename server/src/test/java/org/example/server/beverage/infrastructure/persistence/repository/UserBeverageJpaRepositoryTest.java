@@ -28,24 +28,30 @@ class UserBeverageJpaRepositoryTest {
     private UserBeverageJpaRepository userBeverageJpaRepository;
 
     @Autowired
+    private SelectedBeverageJpaRepository selectedBeverageJpaRepository;
+
+    @Autowired
     private EntityManager entityManager;
 
     @Test
-    @DisplayName("보유 음료를 진열 순서와 음료 ID 순으로 조회한다")
+    @DisplayName("선택 음료를 먼저, 나머지는 진열 순서와 음료 ID 순으로 조회한다")
     void findAllByUserIdSortsOwnedBeverages() {
         User user = persistUser("user-sort");
         Beverage later = persistBeverage("later", 20);
         Beverage firstSameOrder = persistBeverage("first", 10);
         Beverage secondSameOrder = persistBeverage("second", 10);
-        persistOwnership(user, later);
+        UserBeverage selectedOwnership = persistOwnership(user, later);
         persistOwnership(user, firstSameOrder);
         persistOwnership(user, secondSameOrder);
+        selectedBeverageJpaRepository.saveAndFlush(
+            org.example.server.beverage.domain.models.SelectedBeverage.create(user, selectedOwnership)
+        );
 
         List<UserBeverage> result = userBeverageJpaRepository.findAllByUserId(user.getId());
 
         assertThat(result)
             .extracting(userBeverage -> userBeverage.getBeverage().getId())
-            .containsExactly(firstSameOrder.getId(), secondSameOrder.getId(), later.getId());
+            .containsExactly(later.getId(), firstSameOrder.getId(), secondSameOrder.getId());
     }
 
     @Test
@@ -87,8 +93,8 @@ class UserBeverageJpaRepositoryTest {
         return beverage;
     }
 
-    private void persistOwnership(User user, Beverage beverage) {
-        userBeverageJpaRepository.saveAndFlush(UserBeverage.create(
+    private UserBeverage persistOwnership(User user, Beverage beverage) {
+        return userBeverageJpaRepository.saveAndFlush(UserBeverage.create(
             user,
             beverage,
             BeverageAcquisitionType.DEFAULT,
