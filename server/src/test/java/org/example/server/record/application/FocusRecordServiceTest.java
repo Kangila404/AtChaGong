@@ -14,7 +14,9 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.example.server.beverage.domain.models.Beverage;
+import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -51,6 +53,9 @@ class FocusRecordServiceTest {
     private BeverageRepository beverageRepository;
 
     @Mock
+    private UserBeverageRepository userBeverageRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Test
@@ -62,6 +67,9 @@ class FocusRecordServiceTest {
         CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
         given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
+        given(beverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID))
+            .willReturn(Optional.of(ownedBeverage()));
         given(focusRecordRepository.existsByUserIdAndStartedAt(USER_PK, LocalDateTime.of(2024, 1, 15, 9, 0)))
             .willReturn(false);
         given(focusRecordRepository.save(any(FocusRecord.class))).willAnswer(invocation -> invocation.getArgument(0));
@@ -94,6 +102,57 @@ class FocusRecordServiceTest {
             .extracting("code")
             .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
         verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 음료로 집중 기록을 생성하면 음료 없음 예외를 반환한다")
+    void createFocusRecordWithMissingBeverageThrowsException() {
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.BEVERAGE_NOT_FOUND.name());
+        verify(userBeverageRepository, never()).findByUserIdAndBeverageId(any(), any());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("보유하지 않은 음료로 집중 기록을 생성하면 보유하지 않은 음료 예외를 반환한다")
+    void createFocusRecordWithUnownedBeverageThrowsException() {
+        Beverage beverage = beverage();
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
+        given(beverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.BEVERAGE_NOT_OWNED.name());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("판매 종료된 음료라도 보유 중이면 집중 기록을 저장한다")
+    void createFocusRecordWithOwnedEndedBeverageSavesRecord() {
+        Beverage endedBeverage = beverage();
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(endedBeverage));
+        given(endedBeverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID))
+            .willReturn(Optional.of(ownedBeverage()));
+        given(focusRecordRepository.existsByUserIdAndStartedAt(USER_PK, LocalDateTime.of(2024, 1, 15, 9, 0)))
+            .willReturn(false);
+        given(focusRecordRepository.save(any(FocusRecord.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        focusRecordService.createFocusRecord(USER_ID, request);
+
+        verify(focusRecordRepository).save(any(FocusRecord.class));
     }
 
     @Test
@@ -141,6 +200,16 @@ class FocusRecordServiceTest {
 
     private Beverage beverage() {
         return org.mockito.Mockito.mock(Beverage.class);
+    }
+
+    private UserBeverage ownedBeverage() {
+        return org.mockito.Mockito.mock(UserBeverage.class);
+    }
+
+    private CreateFocusRecordRequest validRequest() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
+        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
     }
 
     private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt) {

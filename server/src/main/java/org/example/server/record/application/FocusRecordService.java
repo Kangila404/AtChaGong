@@ -12,6 +12,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -36,6 +37,7 @@ public class FocusRecordService {
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
+    private final UserBeverageRepository userBeverageRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -45,6 +47,7 @@ public class FocusRecordService {
         validateCreateRequest(request);
 
         Beverage beverage = findBeverageByIdOrThrow(request.beverageId());
+        validateBeverageOwnership(user.getId(), beverage.getId());
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
 
@@ -92,6 +95,11 @@ public class FocusRecordService {
         }
         return beverageRepository.findById(beverageId)
             .orElseThrow(() -> new RecordException(RecordErrorCode.BEVERAGE_NOT_FOUND));
+    }
+
+    private void validateBeverageOwnership(Long userId, Long beverageId) {
+        userBeverageRepository.findByUserIdAndBeverageId(userId, beverageId)
+            .orElseThrow(() -> new RecordException(RecordErrorCode.BEVERAGE_NOT_OWNED));
     }
 
     private void validateUserStatus(UserStatus userStatus){
