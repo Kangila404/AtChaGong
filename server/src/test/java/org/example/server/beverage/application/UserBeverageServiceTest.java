@@ -55,7 +55,7 @@ class UserBeverageServiceTest {
         UserBeverage ownedBeverage = UserBeverage.create(
             user,
             beverage,
-            BeverageAcquisitionType.REWARD,
+            BeverageAcquisitionType.PURCHASE,
             acquiredAt
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user));
