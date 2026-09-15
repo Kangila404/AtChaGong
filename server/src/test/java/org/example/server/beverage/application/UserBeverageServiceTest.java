@@ -15,6 +15,7 @@ import org.example.server.beverage.domain.enums.BeverageAcquisitionType;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.domain.repository.SelectedBeverageRepository;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.beverage.presentation.dto.res.UserBeverageResponse;
 import org.example.server.user.domain.enums.UserRole;
@@ -46,6 +47,9 @@ class UserBeverageServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private SelectedBeverageRepository selectedBeverageRepository;
+
     @Test
     @DisplayName("사용자가 보유한 음료 목록을 반환한다")
     void getUserBeveragesReturnsOwnedBeverages() {
@@ -67,6 +71,7 @@ class UserBeverageServiceTest {
             2L,
             "latte",
             "https://example.com/latte.png",
+            false,
             acquiredAt.atOffset(ZoneOffset.ofHours(9))
         ));
     }
@@ -78,7 +83,8 @@ class UserBeverageServiceTest {
         Beverage defaultBeverage = beverage(1L);
         AtomicReference<UserBeverage> savedOwnership = new AtomicReference<>();
         given(beverageRepository.findDefault()).willReturn(Optional.of(defaultBeverage));
-        given(userBeverageRepository.existsByUserIdAndBeverageId(USER_PK, 1L)).willReturn(false);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, 1L))
+            .willReturn(Optional.empty());
         given(userBeverageRepository.save(any(UserBeverage.class))).willAnswer(invocation -> {
             UserBeverage userBeverage = invocation.getArgument(0);
             savedOwnership.set(userBeverage);
@@ -100,7 +106,14 @@ class UserBeverageServiceTest {
         User user = activeUser();
         Beverage defaultBeverage = beverage(1L);
         given(beverageRepository.findDefault()).willReturn(Optional.of(defaultBeverage));
-        given(userBeverageRepository.existsByUserIdAndBeverageId(USER_PK, 1L)).willReturn(true);
+        UserBeverage existingOwnership = UserBeverage.create(
+            user,
+            defaultBeverage,
+            BeverageAcquisitionType.DEFAULT,
+            LocalDateTime.now()
+        );
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, 1L))
+            .willReturn(Optional.of(existingOwnership));
 
         userBeverageService.grantDefaultBeverage(user);
 

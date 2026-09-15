@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum BeverageErrorCode implements ErrorCode {
     BEVERAGE_ID_REQUIRED(HttpStatus.BAD_REQUEST, "beverageId는 필수입니다."),
-    BEVERAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 음료입니다.");
+    BEVERAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 음료입니다."),
+    BEVERAGE_NOT_OWNED(HttpStatus.FORBIDDEN, "보유하지 않은 음료입니다.");
 
     private final HttpStatus status;
     private final String message;
