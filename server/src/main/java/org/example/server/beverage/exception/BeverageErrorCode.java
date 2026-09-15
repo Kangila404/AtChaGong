@@ -18,6 +18,7 @@ public enum BeverageErrorCode implements ErrorCode {
     INVALID_BEVERAGE_SALE_STATUS(HttpStatus.BAD_REQUEST, "음료 판매 상태가 올바르지 않습니다."),
     INVALID_BEVERAGE_SALE_ENDS_AT(HttpStatus.BAD_REQUEST, "음료 판매 종료 시각이 올바르지 않습니다."),
     INVALID_BEVERAGE_DISPLAY_ORDER(HttpStatus.BAD_REQUEST, "음료 진열 순서가 올바르지 않습니다."),
+    INVALID_BEVERAGE_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "음료 목록 조회 요청이 올바르지 않습니다."),
     INVALID_BEVERAGE_ORDER_REQUEST(HttpStatus.BAD_REQUEST, "음료 순서 변경 요청이 올바르지 않습니다."),
     DEFAULT_BEVERAGE_MODIFICATION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "기본 음료에는 요청한 변경을 적용할 수 없습니다.");
 
