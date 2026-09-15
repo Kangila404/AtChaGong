@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import org.example.server.beverage.domain.enums.BeverageAcquisitionType;
 import org.example.server.beverage.domain.models.Beverage;
@@ -90,7 +91,7 @@ class SelectedBeverageServiceTest {
 
         assertThat(response)
             .returns(2L, SelectedBeverageResponse::beverageId)
-            .matches(ignored -> selection.getUserBeverage() == newOwnership);
+            .matches(ignored -> Objects.equals(selection.getUserBeverage(), newOwnership));
     }
 
     @Test
