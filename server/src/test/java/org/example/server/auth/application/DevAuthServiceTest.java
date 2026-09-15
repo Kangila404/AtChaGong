@@ -14,6 +14,7 @@ import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.example.server.auth.presentation.dto.req.DevLoginRequest;
 import org.example.server.auth.presentation.dto.res.DevSignupResponse;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
+import org.example.server.beverage.application.UserBeverageService;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
@@ -51,6 +52,9 @@ class DevAuthServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private UserBeverageService userBeverageService;
+
     @Test
     @DisplayName("개발 회원가입은 기본 프로필 이미지로 사용자를 생성한다")
     void signupCreatesUserWithDefaultProfileImage() {
@@ -72,6 +76,7 @@ class DevAuthServiceTest {
         assertThat(savedUser.getUserRole()).isEqualTo(UserRole.USER);
         assertThat(savedUser.isOnboardingCompleted()).isFalse();
         assertThat(savedUser.getProfileImg()).isSameAs(profileImg);
+        verify(userBeverageService).grantDefaultBeverage(savedUser);
     }
 
     @Test

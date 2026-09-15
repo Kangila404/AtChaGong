@@ -14,6 +14,7 @@ import org.example.server.auth.infrastructure.jwt.JwtTokenProvider;
 import org.example.server.auth.presentation.dto.req.DevLoginRequest;
 import org.example.server.auth.presentation.dto.res.DevSignupResponse;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
+import org.example.server.beverage.application.UserBeverageService;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
@@ -36,6 +37,7 @@ public class DevAuthService {
     // 리포지토리
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final UserBeverageService userBeverageService;
 
     @Transactional
     public DevSignupResponse signup() {
@@ -54,6 +56,7 @@ public class DevAuthService {
             .build();
 
         User savedUser = userRepository.save(user);
+        userBeverageService.grantDefaultBeverage(savedUser);
         return DevSignupResponse.from(savedUser.getUserId());
     }
 

@@ -28,6 +28,7 @@ import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
+import org.example.server.beverage.application.UserBeverageService;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
 import org.example.server.record.domain.repository.FocusRecordRepository;
@@ -89,6 +90,9 @@ class AuthServiceTest {
     @Mock
     private DeviceTokenRepository deviceTokenRepository;
 
+    @Mock
+    private UserBeverageService userBeverageService;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -101,7 +105,8 @@ class AuthServiceTest {
             focusRecordRepository,
             timerSettingRepository,
             notificationSettingRepository,
-            deviceTokenRepository
+            deviceTokenRepository,
+            userBeverageService
         );
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
@@ -165,6 +170,7 @@ class AuthServiceTest {
         assertThat(savedUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(savedUser.isOnboardingCompleted()).isFalse();
         assertThat(savedUser.getProfileImg()).isEqualTo(defaultProfileImg);
+        verify(userBeverageService).grantDefaultBeverage(savedUser);
 
         ArgumentCaptor<AuthAccount> authAccountCaptor = ArgumentCaptor.forClass(AuthAccount.class);
         verify(authAccountRepository).save(authAccountCaptor.capture());
@@ -265,6 +271,7 @@ class AuthServiceTest {
         verify(timerSettingRepository).deleteByUserId(USER_PK);
         verify(notificationSettingRepository).deleteByUserId(USER_PK);
         verify(deviceTokenRepository).deleteByUserId(USER_PK);
+        verify(userBeverageService).resetToDefaultBeverage(withdrawnUser);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
