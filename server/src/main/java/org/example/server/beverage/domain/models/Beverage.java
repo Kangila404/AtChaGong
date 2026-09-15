@@ -93,4 +93,24 @@ public class Beverage extends BaseEntity {
     public boolean isLimited() {
         return saleEndsAt != null;
     }
+
+    public void update(
+        String name,
+        String imgUrl,
+        Long price,
+        BeverageSaleStatus saleStatus,
+        LocalDateTime saleEndsAt,
+        Integer displayOrder
+    ) {
+        this.name = name;
+        this.imgUrl = imgUrl;
+        this.price = price;
+        this.saleStatus = saleStatus;
+        this.saleEndsAt = saleEndsAt;
+        this.displayOrder = displayOrder;
+    }
+
+    public void updateDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
+    }
 }
