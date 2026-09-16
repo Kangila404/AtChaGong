@@ -132,4 +132,20 @@ public class User extends BaseEntity {
         String normalizedUserId = userId.replace("-", "");
         return "사용자" + normalizedUserId.substring(0, Math.min(6, normalizedUserId.length()));
     }
+
+    // 7. 유저 상태 변경
+    public void updateStatus(UserStatus userStatus){
+        if (userStatus == null) {
+            throw new UserException(UserErrorCode.INVALID_USER_STATUS_CHANGE);
+        }
+
+        if (this.userStatus == UserStatus.WITHDRAWN) {
+            throw new UserException(UserErrorCode.WITHDRAWN_USER);
+        }
+
+        if (userStatus == UserStatus.WITHDRAWN) {
+            throw new UserException(UserErrorCode.INVALID_USER_STATUS_CHANGE);
+        }
+        this.userStatus = userStatus;
+    }
 }

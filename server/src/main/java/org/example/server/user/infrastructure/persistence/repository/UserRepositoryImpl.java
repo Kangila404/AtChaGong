@@ -1,6 +1,7 @@
 package org.example.server.user.infrastructure.persistence.repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.example.server.user.domain.enums.UserStatus;
@@ -33,4 +34,11 @@ public class UserRepositoryImpl implements UserRepository {
     public long countByUserStatusInAndDeletedAtIsNull(Collection<UserStatus> userStatuses) {
         return userJpaRepository.countByUserStatusInAndDeletedAtIsNull(userStatuses);
     }
+
+    @Override
+    public List<User> findAllByDeletedAtIsNull() {
+        return userJpaRepository.findAllByDeletedAtIsNull();
+    }
+
+
 }
