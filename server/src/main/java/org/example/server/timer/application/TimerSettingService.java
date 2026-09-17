@@ -1,10 +1,6 @@
 package org.example.server.timer.application;
 
 import lombok.RequiredArgsConstructor;
-import org.example.server.beverage.domain.models.Beverage;
-import org.example.server.beverage.domain.repository.BeverageRepository;
-import org.example.server.beverage.exception.BeverageErrorCode;
-import org.example.server.beverage.exception.BeverageException;
 import org.example.server.timer.domain.models.TimerSetting;
 import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.timer.exception.TimerErrorCode;
@@ -26,7 +22,6 @@ public class TimerSettingService {
 
     private final UserRepository userRepository;
     private final TimerSettingRepository timerSettingRepository;
-    private final BeverageRepository beverageRepository;
 
     @Transactional(readOnly = true)
     public TimerSettingResponse getSetting(String userId){
@@ -43,18 +38,16 @@ public class TimerSettingService {
         User user = findUserByUserIdOrElseThrow(userId);
         validateUserStatus(user.getUserStatus());
         validateTimerValues(request);
-        Beverage beverage = findBeverageByIdOrElseThrow(request.beverageId());
-
         TimerSetting timerSetting = timerSettingRepository.findByUserId(user.getId()).orElse(null);
 
         if (timerSetting == null) {
             timerSetting = TimerSetting.create(
-                user.getId(), beverage,
+                user.getId(),
                 request.focusMinutes(), request.breakMinutes(), request.cycleCount()
             );
             timerSettingRepository.save(timerSetting);
         } else {
-            timerSetting.update(beverage, request.focusMinutes(), request.breakMinutes(), request.cycleCount());
+            timerSetting.update(request.focusMinutes(), request.breakMinutes(), request.cycleCount());
         }
 
         return SaveTimerResponse.from(timerSetting);
@@ -64,14 +57,6 @@ public class TimerSettingService {
     private User findUserByUserIdOrElseThrow(String userId){
         return userRepository.findByUserId(userId)
             .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-    }
-
-    private Beverage findBeverageByIdOrElseThrow(Long beverageId){
-        if (beverageId == null) {
-            throw new BeverageException(BeverageErrorCode.BEVERAGE_ID_REQUIRED);
-        }
-        return beverageRepository.findById(beverageId)
-            .orElseThrow(() -> new BeverageException(BeverageErrorCode.BEVERAGE_NOT_FOUND));
     }
 
     // ================ 검증 메서드 모음 ================ //

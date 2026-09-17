@@ -1,0 +1,17 @@
+ALTER TABLE beverage
+    MODIFY COLUMN img_url VARCHAR(512) NOT NULL,
+    ADD COLUMN price BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN display_order INT NOT NULL DEFAULT 0,
+    ADD COLUMN sale_status VARCHAR(20) NOT NULL DEFAULT 'ON_SALE',
+    ADD COLUMN is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN sale_ends_at DATETIME NULL,
+    ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+UPDATE beverage
+SET price = 0,
+    display_order = 0,
+    sale_status = 'ON_SALE',
+    is_default = TRUE,
+    sale_ends_at = NULL
+WHERE id = 1;

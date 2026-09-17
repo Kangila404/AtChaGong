@@ -6,9 +6,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import org.example.server.admin.presentation.dto.req.AdminUpdateUserStatusRequest;
+import org.example.server.admin.presentation.dto.res.AdminUpdateStatusResponse;
+import org.example.server.admin.presentation.dto.res.AdminUserResponse;
 import org.example.server.admin.presentation.dto.res.AdminUserSummaryResponse;
+import org.example.server.admin.presentation.dto.res.AdminUsersResponse;
+import org.example.server.beverage.domain.repository.SelectedBeverageRepository;
+import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.common.exception.AtchagongException;
+import org.example.server.record.domain.models.FocusRecord;
+import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
@@ -26,6 +37,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminUserServiceTest {
 
     private static final String ADMIN_ID = "admin-1";
+    private static final String USER_ID = "user-1";
+    private static final long ADMIN_PK = 1L;
+    private static final long USER_PK = 2L;
 
     @InjectMocks
     private AdminUserService adminUserService;
@@ -33,10 +47,21 @@ class AdminUserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private FocusRecordRepository focusRecordRepository;
+
+    @Mock
+    private UserBeverageRepository userBeverageRepository;
+
+    @Mock
+    private SelectedBeverageRepository selectedBeverageRepository;
+
     @Test
     @DisplayName("관리자는 전체 사용자 요약을 조회할 수 있다")
     void getUserSummaryReturnsTotalUserCount() {
-        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(user(UserRole.ADMIN, UserStatus.ACTIVE)));
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(
+            Optional.of(user(ADMIN_PK, ADMIN_ID, UserRole.ADMIN, UserStatus.ACTIVE))
+        );
         given(userRepository.countByUserStatusInAndDeletedAtIsNull(org.mockito.ArgumentMatchers.anyCollection()))
             .willReturn(12L);
 
@@ -48,7 +73,9 @@ class AdminUserServiceTest {
     @Test
     @DisplayName("관리자가 아니면 사용자 요약을 조회할 수 없다")
     void getUserSummaryWithNonAdminThrowsException() {
-        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(user(UserRole.USER, UserStatus.ACTIVE)));
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(
+            Optional.of(user(ADMIN_PK, ADMIN_ID, UserRole.USER, UserStatus.ACTIVE))
+        );
 
         assertThatThrownBy(() -> adminUserService.getUserSummary(ADMIN_ID))
             .isInstanceOf(AtchagongException.class);
@@ -66,10 +93,99 @@ class AdminUserServiceTest {
             .isEqualTo(UserErrorCode.USER_NOT_FOUND.name());
     }
 
-    private User user(UserRole role, UserStatus status) {
+    @Test
+    @DisplayName("관리자는 탈퇴하지 않은 사용자 목록을 조회할 수 있다")
+    void getUsersReturnsNonWithdrawnUsers() {
+        User admin = user(ADMIN_PK, ADMIN_ID, UserRole.ADMIN, UserStatus.ACTIVE);
+        User targetUser = user(USER_PK, USER_ID, UserRole.USER, UserStatus.ACTIVE);
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(userRepository.findAllByDeletedAtIsNull()).willReturn(List.of(targetUser));
+
+        AdminUsersResponse response = adminUserService.getUsers(ADMIN_ID);
+
+        assertThat(response.users()).hasSize(1);
+        assertThat(response.users().get(0).userId()).isEqualTo(USER_ID);
+        verify(userRepository).findAllByDeletedAtIsNull();
+    }
+
+    @Test
+    @DisplayName("관리자는 사용자 상세에서 집중 통계와 연속 집중 일수를 조회할 수 있다")
+    void getUserReturnsFocusStatistics() {
+        User admin = user(ADMIN_PK, ADMIN_ID, UserRole.ADMIN, UserStatus.ACTIVE);
+        User targetUser = user(USER_PK, USER_ID, UserRole.USER, UserStatus.ACTIVE);
+        LocalDate today = LocalDate.now();
+        List<FocusRecord> records = List.of(
+            focusRecord(USER_PK, today.minusDays(2)),
+            focusRecord(USER_PK, today.minusDays(1)),
+            focusRecord(USER_PK, today)
+        );
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(targetUser));
+        given(focusRecordRepository.findAllByUserId(USER_PK)).willReturn(records);
+        given(userBeverageRepository.findAllByUserId(USER_PK)).willReturn(List.of());
+        given(selectedBeverageRepository.findByUserId(USER_PK)).willReturn(Optional.empty());
+
+        AdminUserResponse response = adminUserService.getUser(ADMIN_ID, USER_ID);
+
+        assertThat(response.totalFocusedSeconds()).isEqualTo(4_500L);
+        assertThat(response.completedCupCount()).isEqualTo(3);
+        assertThat(response.currentStreakDays()).isEqualTo(3);
+        assertThat(response.selectedBeverageId()).isNull();
+        assertThat(response.ownedBeverageCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("관리자는 일반 사용자의 상태를 변경할 수 있다")
+    void updateStatusChangesRegularUserStatus() {
+        User admin = user(ADMIN_PK, ADMIN_ID, UserRole.ADMIN, UserStatus.ACTIVE);
+        User targetUser = user(USER_PK, USER_ID, UserRole.USER, UserStatus.ACTIVE);
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(targetUser));
+
+        AdminUpdateStatusResponse response = adminUserService.updateStatus(
+            ADMIN_ID,
+            USER_ID,
+            new AdminUpdateUserStatusRequest(UserStatus.SUSPENDED)
+        );
+
+        assertThat(targetUser.getUserStatus()).isEqualTo(UserStatus.SUSPENDED);
+        assertThat(response.message()).isEqualTo("success");
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    @DisplayName("관리자는 자신 또는 다른 관리자 계정의 상태를 변경할 수 없다")
+    void updateStatusRejectsAdminAccount() {
+        User admin = user(ADMIN_PK, ADMIN_ID, UserRole.ADMIN, UserStatus.ACTIVE);
+        User anotherAdmin = user(USER_PK, USER_ID, UserRole.ADMIN, UserStatus.ACTIVE);
+        given(userRepository.findByUserId(ADMIN_ID)).willReturn(Optional.of(admin));
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(anotherAdmin));
+
+        assertThatThrownBy(() -> adminUserService.updateStatus(
+            ADMIN_ID,
+            USER_ID,
+            new AdminUpdateUserStatusRequest(UserStatus.SUSPENDED)
+        )).isInstanceOf(AtchagongException.class);
+
+        verify(userRepository, never()).save(anotherAdmin);
+    }
+
+    private FocusRecord focusRecord(long userId, LocalDate date) {
+        LocalDateTime completedAt = date.atTime(9, 25);
+        return FocusRecord.create(
+            userId,
+            null,
+            25,
+            1_500,
+            completedAt.minusMinutes(25),
+            completedAt
+        );
+    }
+
+    private User user(long id, String userId, UserRole role, UserStatus status) {
         return User.builder()
-            .id(1L)
-            .userId(ADMIN_ID)
+            .id(id)
+            .userId(userId)
             .nickname("admin")
             .userRole(role)
             .userStatus(status)
