@@ -82,6 +82,8 @@ class FocusRecordServiceTest {
         assertThat(saved.getUserId()).isEqualTo(USER_PK);
         assertThat(saved.getBeverage()).isSameAs(beverage);
         assertThat(saved.getFocusMinutes()).isEqualTo(25);
+        assertThat(saved.getBreakMinutes()).isEqualTo(5);
+        assertThat(saved.getCycleCount()).isEqualTo(4);
         assertThat(saved.getFocusedSeconds()).isEqualTo(1_500);
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
@@ -101,6 +103,31 @@ class FocusRecordServiceTest {
             .isInstanceOf(RecordException.class)
             .extracting("code")
             .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("집중 시간이 25분 미만이거나 60분을 초과하면 저장하지 않는다")
+    void createFocusRecordWithOutOfRangeFocusMinutesThrowsException() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 10, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest shortRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 20, 1_200, startedAt, completedAt
+        );
+        CreateFocusRecordRequest longRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 65, 3_900, startedAt, completedAt
+        );
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, shortRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, longRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+
         verify(focusRecordRepository, never()).save(any());
     }
 

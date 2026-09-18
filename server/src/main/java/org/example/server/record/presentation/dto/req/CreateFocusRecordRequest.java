@@ -10,17 +10,9 @@ public record CreateFocusRecordRequest(
     Long beverageId,
 
     @NotNull
-    @Min(5)
-    @Max(180)
+    @Min(25)
+    @Max(60)
     Integer focusMinutes,
-
-    @NotNull
-    @Min(1)
-    Integer breakMinutes,
-
-    @NotNull
-    @Min(1)
-    Integer cycleCount,
 
     @NotNull
     @Min(1)
@@ -32,13 +24,4 @@ public record CreateFocusRecordRequest(
     @NotNull
     OffsetDateTime completedAt
 ) {
-    public CreateFocusRecordRequest(
-        Long beverageId,
-        Integer focusMinutes,
-        Integer focusedSeconds,
-        OffsetDateTime startedAt,
-        OffsetDateTime completedAt
-    ) {
-        this(beverageId, focusMinutes, 5, 1, focusedSeconds, startedAt, completedAt);
-    }
 }

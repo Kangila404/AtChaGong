@@ -113,6 +113,6 @@ public class FocusRecord extends BaseEntity {
         LocalDateTime startedAt,
         LocalDateTime completedAt
     ) {
-        return create(userId, beverage, focusMinutes, 5, 1, focusedSeconds, startedAt, completedAt);
+        return create(userId, beverage, focusMinutes, 5, 4, focusedSeconds, startedAt, completedAt);
     }
 }

@@ -34,6 +34,8 @@ public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final int FIXED_BREAK_MINUTES = 5;
+    private static final int FIXED_CYCLE_COUNT = 4;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
@@ -57,8 +59,8 @@ public class FocusRecordService {
             user.getId(),
             beverage,
             request.focusMinutes(),
-            request.breakMinutes(),
-            request.cycleCount(),
+            FIXED_BREAK_MINUTES,
+            FIXED_CYCLE_COUNT,
             request.focusedSeconds(),
             startedAt,
             completedAt
@@ -118,14 +120,12 @@ public class FocusRecordService {
         }
         validateTimeRange(request);
         validateFocusMinutes(request.focusMinutes());
-        validateBreakMinutes(request.breakMinutes());
-        validateCycleCount(request.cycleCount());
         validateFocusedSeconds(request.focusedSeconds());
         validateFocusedSecondsRange(request);
     }
 
     private void validateFocusMinutes(Integer focusMinutes) {
-        if (focusMinutes == null || focusMinutes < 5 || focusMinutes > 180 || focusMinutes % 5 != 0) {
+        if (focusMinutes == null || focusMinutes < 25 || focusMinutes > 60 || focusMinutes % 5 != 0) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUS_MINUTES);
         }
     }
@@ -133,18 +133,6 @@ public class FocusRecordService {
     private void validateFocusedSeconds(Integer focusedSeconds) {
         if (focusedSeconds == null || focusedSeconds < 1) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUSED_SECONDS);
-        }
-    }
-
-    private void validateBreakMinutes(Integer breakMinutes) {
-        if (breakMinutes == null || breakMinutes < 1) {
-            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
-        }
-    }
-
-    private void validateCycleCount(Integer cycleCount) {
-        if (cycleCount == null || cycleCount < 1) {
-            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
         }
     }
 
