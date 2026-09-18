@@ -34,8 +34,6 @@ public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-    private static final int FIXED_BREAK_MINUTES = 5;
-    private static final int FIXED_CYCLE_COUNT = 4;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
@@ -59,8 +57,8 @@ public class FocusRecordService {
             user.getId(),
             beverage,
             request.focusMinutes(),
-            FIXED_BREAK_MINUTES,
-            FIXED_CYCLE_COUNT,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             request.focusedSeconds(),
             startedAt,
             completedAt

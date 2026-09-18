@@ -82,8 +82,8 @@ class FocusRecordServiceTest {
         assertThat(saved.getUserId()).isEqualTo(USER_PK);
         assertThat(saved.getBeverage()).isSameAs(beverage);
         assertThat(saved.getFocusMinutes()).isEqualTo(25);
-        assertThat(saved.getBreakMinutes()).isEqualTo(5);
-        assertThat(saved.getCycleCount()).isEqualTo(4);
+        assertThat(saved.getBreakMinutes()).isEqualTo(FocusRecord.FIXED_BREAK_MINUTES);
+        assertThat(saved.getCycleCount()).isEqualTo(FocusRecord.FIXED_CYCLE_COUNT);
         assertThat(saved.getFocusedSeconds()).isEqualTo(1_500);
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
@@ -244,8 +244,8 @@ class FocusRecordServiceTest {
             USER_PK,
             beverage,
             focusMinutes,
-            5,
-            4,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             focusedSeconds,
             startedAt,
             startedAt.plusMinutes(30)

@@ -24,6 +24,9 @@ import org.example.server.common.entity.BaseEntity;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FocusRecord extends BaseEntity {
 
+    public static final int FIXED_BREAK_MINUTES = 5;
+    public static final int FIXED_CYCLE_COUNT = 4;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

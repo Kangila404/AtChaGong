@@ -164,8 +164,8 @@ class StatisticsServiceTest {
             USER_PK,
             org.mockito.Mockito.mock(Beverage.class),
             25,
-            5,
-            4,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             focusedSeconds,
             LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 0)),
             LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 30))

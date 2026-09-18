@@ -176,8 +176,8 @@ class AdminUserServiceTest {
             userId,
             null,
             25,
-            5,
-            4,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             1_500,
             completedAt.minusMinutes(25),
             completedAt
