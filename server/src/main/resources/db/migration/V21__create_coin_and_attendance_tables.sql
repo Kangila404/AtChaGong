@@ -41,4 +41,4 @@ CREATE TABLE attendance_record (
 
 ALTER TABLE focus_record
     ADD COLUMN break_minutes INT NOT NULL DEFAULT 5 AFTER focus_minutes,
-    ADD COLUMN cycle_count INT NOT NULL DEFAULT 1 AFTER break_minutes;
+    ADD COLUMN cycle_count INT NOT NULL DEFAULT 4 AFTER break_minutes;
