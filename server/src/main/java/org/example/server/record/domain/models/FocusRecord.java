@@ -105,14 +105,4 @@ public class FocusRecord extends BaseEntity {
             .build();
     }
 
-    public static FocusRecord create(
-        Long userId,
-        Beverage beverage,
-        int focusMinutes,
-        int focusedSeconds,
-        LocalDateTime startedAt,
-        LocalDateTime completedAt
-    ) {
-        return create(userId, beverage, focusMinutes, 5, 4, focusedSeconds, startedAt, completedAt);
-    }
 }

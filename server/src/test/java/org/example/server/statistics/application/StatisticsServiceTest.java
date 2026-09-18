@@ -164,6 +164,8 @@ class StatisticsServiceTest {
             USER_PK,
             org.mockito.Mockito.mock(Beverage.class),
             25,
+            5,
+            4,
             focusedSeconds,
             LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 0)),
             LocalDateTime.of(focusedDate, java.time.LocalTime.of(9, 30))

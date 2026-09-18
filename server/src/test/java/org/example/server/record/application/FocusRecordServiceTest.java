@@ -244,6 +244,8 @@ class FocusRecordServiceTest {
             USER_PK,
             beverage,
             focusMinutes,
+            5,
+            4,
             focusedSeconds,
             startedAt,
             startedAt.plusMinutes(30)

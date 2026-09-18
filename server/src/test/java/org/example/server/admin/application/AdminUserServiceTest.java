@@ -176,6 +176,8 @@ class AdminUserServiceTest {
             userId,
             null,
             25,
+            5,
+            4,
             1_500,
             completedAt.minusMinutes(25),
             completedAt
