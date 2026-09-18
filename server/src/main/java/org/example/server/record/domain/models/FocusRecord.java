@@ -39,6 +39,12 @@ public class FocusRecord extends BaseEntity {
     @Column(name = "focus_minutes", nullable = false)
     private int focusMinutes;
 
+    @Column(name = "break_minutes", nullable = false)
+    private int breakMinutes;
+
+    @Column(name = "cycle_count", nullable = false)
+    private int cycleCount;
+
     // 실제 집중한 시간
     @Column(name = "focused_seconds", nullable = false)
     private int focusedSeconds;
@@ -58,6 +64,8 @@ public class FocusRecord extends BaseEntity {
         Long userId,
         Beverage beverage,
         int focusMinutes,
+        int breakMinutes,
+        int cycleCount,
         int focusedSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
@@ -66,6 +74,8 @@ public class FocusRecord extends BaseEntity {
         this.userId = userId;
         this.beverage = beverage;
         this.focusMinutes = focusMinutes;
+        this.breakMinutes = breakMinutes;
+        this.cycleCount = cycleCount;
         this.focusedSeconds = focusedSeconds;
         this.startedAt = startedAt;
         this.completedAt = completedAt;
@@ -76,6 +86,8 @@ public class FocusRecord extends BaseEntity {
         Long userId,
         Beverage beverage,
         int focusMinutes,
+        int breakMinutes,
+        int cycleCount,
         int focusedSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt
@@ -84,10 +96,23 @@ public class FocusRecord extends BaseEntity {
             .userId(userId)
             .beverage(beverage)
             .focusMinutes(focusMinutes)
+            .breakMinutes(breakMinutes)
+            .cycleCount(cycleCount)
             .focusedSeconds(focusedSeconds)
             .startedAt(startedAt)
             .completedAt(completedAt)
             .focusedDate(completedAt.toLocalDate())
             .build();
+    }
+
+    public static FocusRecord create(
+        Long userId,
+        Beverage beverage,
+        int focusMinutes,
+        int focusedSeconds,
+        LocalDateTime startedAt,
+        LocalDateTime completedAt
+    ) {
+        return create(userId, beverage, focusMinutes, 5, 1, focusedSeconds, startedAt, completedAt);
     }
 }

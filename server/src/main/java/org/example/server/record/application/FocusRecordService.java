@@ -57,6 +57,8 @@ public class FocusRecordService {
             user.getId(),
             beverage,
             request.focusMinutes(),
+            request.breakMinutes(),
+            request.cycleCount(),
             request.focusedSeconds(),
             startedAt,
             completedAt
@@ -116,6 +118,8 @@ public class FocusRecordService {
         }
         validateTimeRange(request);
         validateFocusMinutes(request.focusMinutes());
+        validateBreakMinutes(request.breakMinutes());
+        validateCycleCount(request.cycleCount());
         validateFocusedSeconds(request.focusedSeconds());
         validateFocusedSecondsRange(request);
     }
@@ -129,6 +133,18 @@ public class FocusRecordService {
     private void validateFocusedSeconds(Integer focusedSeconds) {
         if (focusedSeconds == null || focusedSeconds < 1) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUSED_SECONDS);
+        }
+    }
+
+    private void validateBreakMinutes(Integer breakMinutes) {
+        if (breakMinutes == null || breakMinutes < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    private void validateCycleCount(Integer cycleCount) {
+        if (cycleCount == null || cycleCount < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
         }
     }
 
