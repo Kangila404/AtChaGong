@@ -37,7 +37,7 @@ public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-    public static final long FOCUS_COMPLETION_REWARD = 10L;
+    public static final long FOCUS_COMPLETION_REWARD = 3L;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
@@ -189,6 +189,13 @@ public class FocusRecordService {
         long elapsedSeconds = Duration.between(request.startedAt(), request.completedAt()).getSeconds();
         if (request.focusedSeconds() > elapsedSeconds + 5) {
             throw new RecordException(RecordErrorCode.INVALID_TIME_RANGE);
+        }
+
+        long requiredSessionSeconds = Duration.ofMinutes(
+            (long) request.cycleCount() * (request.focusMinutes() + request.breakMinutes())
+        ).getSeconds();
+        if (elapsedSeconds < requiredSessionSeconds) {
+            throw new RecordException(RecordErrorCode.INCOMPLETE_FOCUS);
         }
     }
 
