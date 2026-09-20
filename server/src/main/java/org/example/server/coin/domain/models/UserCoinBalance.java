@@ -45,6 +45,9 @@ public class UserCoinBalance extends BaseEntity {
     }
 
     public void change(long amount) {
+        if (balance + amount < 0) {
+            throw new IllegalArgumentException("Coin balance cannot be negative");
+        }
         this.balance += amount;
     }
 }

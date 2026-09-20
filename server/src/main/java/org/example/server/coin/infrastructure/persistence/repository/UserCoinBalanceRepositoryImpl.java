@@ -18,6 +18,11 @@ public class UserCoinBalanceRepositoryImpl implements UserCoinBalanceRepository 
     }
 
     @Override
+    public Optional<UserCoinBalance> findWithLockByUserId(Long userId) {
+        return userCoinBalanceJpaRepository.findWithLockByUser_Id(userId);
+    }
+
+    @Override
     public UserCoinBalance save(UserCoinBalance userCoinBalance) {
         return userCoinBalanceJpaRepository.save(userCoinBalance);
     }
