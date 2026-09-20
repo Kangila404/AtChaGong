@@ -13,6 +13,7 @@ public enum BeverageErrorCode implements ErrorCode {
     BEVERAGE_NOT_OWNED(HttpStatus.FORBIDDEN, "보유하지 않은 음료입니다."),
     BEVERAGE_NOT_ON_SALE(HttpStatus.CONFLICT, "현재 판매 중인 음료가 아닙니다."),
     BEVERAGE_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 보유한 음료입니다."),
+    DEFAULT_BEVERAGE_PURCHASE_NOT_ALLOWED(HttpStatus.CONFLICT, "기본 음료는 구매할 수 없습니다."),
     INVALID_BEVERAGE_ID(HttpStatus.BAD_REQUEST, "음료 ID가 올바르지 않습니다."),
     INVALID_BEVERAGE_NAME(HttpStatus.BAD_REQUEST, "음료 이름이 올바르지 않습니다."),
     INVALID_BEVERAGE_PRICE(HttpStatus.BAD_REQUEST, "음료 가격이 올바르지 않습니다."),

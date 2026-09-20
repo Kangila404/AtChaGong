@@ -39,7 +39,13 @@ public class BeveragePurchaseService {
         Beverage beverage = beverageRepository.findById(beverageId)
             .orElseThrow(() -> new BeverageException(BeverageErrorCode.BEVERAGE_NOT_FOUND));
         LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
+        if (beverage.isDefault()) {
+            throw new BeverageException(BeverageErrorCode.DEFAULT_BEVERAGE_PURCHASE_NOT_ALLOWED);
+        }
         if (!beverage.isAvailableForSale(now)) {
+            throw new BeverageException(BeverageErrorCode.BEVERAGE_NOT_ON_SALE);
+        }
+        if (beverage.getPrice() < Beverage.MIN_SALE_PRICE) {
             throw new BeverageException(BeverageErrorCode.BEVERAGE_NOT_ON_SALE);
         }
         if (userBeverageRepository.existsByUserIdAndBeverageId(user.getId(), beverageId)) {
