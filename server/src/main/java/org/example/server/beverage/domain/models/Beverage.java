@@ -24,6 +24,7 @@ public class Beverage extends BaseEntity {
 
     public static final int MAX_NAME_LENGTH = 255;
     public static final int MAX_IMG_URL_LENGTH = 512;
+    public static final long MIN_SALE_PRICE = 100L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

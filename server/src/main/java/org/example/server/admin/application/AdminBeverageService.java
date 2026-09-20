@@ -218,7 +218,7 @@ public class AdminBeverageService {
     }
 
     private Long validatePrice(Long price) {
-        if (price == null || price < 0) {
+        if (price == null || price < Beverage.MIN_SALE_PRICE) {
             throw new BeverageException(BeverageErrorCode.INVALID_BEVERAGE_PRICE);
         }
         return price;
