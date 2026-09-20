@@ -94,6 +94,11 @@ public class Beverage extends BaseEntity {
         return saleEndsAt != null;
     }
 
+    public boolean isAvailableForSale(LocalDateTime now) {
+        return saleStatus == BeverageSaleStatus.ON_SALE
+            && (saleEndsAt == null || saleEndsAt.isAfter(now));
+    }
+
     public void update(
         String name,
         String imgUrl,
