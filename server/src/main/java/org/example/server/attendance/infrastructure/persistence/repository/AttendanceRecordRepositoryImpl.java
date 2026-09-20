@@ -19,6 +19,11 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
     }
 
     @Override
+    public Optional<AttendanceRecord> findLatestByUserId(Long userId) {
+        return attendanceRecordJpaRepository.findFirstByUser_IdOrderByAttendanceDateDesc(userId);
+    }
+
+    @Override
     public AttendanceRecord save(AttendanceRecord attendanceRecord) {
         return attendanceRecordJpaRepository.save(attendanceRecord);
     }
