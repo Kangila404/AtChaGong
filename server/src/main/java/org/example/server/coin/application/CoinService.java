@@ -10,6 +10,10 @@ import org.example.server.coin.domain.repository.UserCoinBalanceRepository;
 import org.example.server.coin.exception.CoinErrorCode;
 import org.example.server.coin.exception.CoinException;
 import org.example.server.user.domain.models.User;
+import org.example.server.user.domain.enums.UserStatus;
+import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.exception.UserErrorCode;
+import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,12 @@ public class CoinService {
 
     private final UserCoinBalanceRepository userCoinBalanceRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public long getBalance(String userId) {
+        return getBalance(findActiveUser(userId));
+    }
 
     @Transactional(readOnly = true)
     public long getBalance(User user) {
@@ -53,5 +63,17 @@ public class CoinService {
         );
         coinTransactionRepository.save(transaction);
         return balance.getBalance();
+    }
+
+    private User findActiveUser(String userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+        if (user.getUserStatus() == UserStatus.SUSPENDED) {
+            throw new UserException(UserErrorCode.SUSPENDED_USER);
+        }
+        if (user.getUserStatus() == UserStatus.WITHDRAWN) {
+            throw new UserException(UserErrorCode.WITHDRAWN_USER);
+        }
+        return user;
     }
 }
