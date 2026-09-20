@@ -45,24 +45,30 @@ public class CoinService {
         CoinReferenceType referenceType,
         Long referenceId
     ) {
-        if (coinTransactionRepository.existsByUserIdAndTransactionTypeAndReferenceTypeAndReferenceId(
-            user.getId(), transactionType, referenceType, referenceId
-        )) {
+        validateUniqueTransaction(user, transactionType, referenceType, referenceId);
+        UserCoinBalance balance = findBalanceForUpdate(user);
+        validateSufficientBalance(balance, amount);
+        balance.change(amount);
+        saveTransaction(user, amount, transactionType, referenceType, referenceId, balance.getBalance());
+        return balance.getBalance();
+    }
+
+    private void validateUniqueTransaction(User user, CoinTransactionType type, CoinReferenceType referenceType, Long referenceId) {
+        if (coinTransactionRepository.existsByUserIdAndTransactionTypeAndReferenceTypeAndReferenceId(user.getId(), type, referenceType, referenceId)) {
             throw new CoinException(CoinErrorCode.DUPLICATE_COIN_TRANSACTION);
         }
-
-        UserCoinBalance balance = userCoinBalanceRepository.findWithLockByUserId(user.getId())
-            .orElseThrow(() -> new CoinException(CoinErrorCode.COIN_BALANCE_NOT_FOUND));
-        if (amount < 0 && balance.getBalance() < -amount) {
-            throw new CoinException(CoinErrorCode.INSUFFICIENT_COIN);
-        }
-
-        balance.change(amount);
+    }
+    private UserCoinBalance findBalanceForUpdate(User user) {
+        return userCoinBalanceRepository.findWithLockByUserId(user.getId()).orElseThrow(() -> new CoinException(CoinErrorCode.COIN_BALANCE_NOT_FOUND));
+    }
+    private void validateSufficientBalance(UserCoinBalance balance, long amount) {
+        if (amount < 0 && balance.getBalance() < -amount) throw new CoinException(CoinErrorCode.INSUFFICIENT_COIN);
+    }
+    private void saveTransaction(User user, long amount, CoinTransactionType type, CoinReferenceType referenceType, Long referenceId, long balanceAfter) {
         CoinTransaction transaction = CoinTransaction.create(
-            user, amount, transactionType, referenceType, referenceId, balance.getBalance()
+            user, amount, type, referenceType, referenceId, balanceAfter
         );
         coinTransactionRepository.save(transaction);
-        return balance.getBalance();
     }
 
     private User findActiveUser(String userId) {

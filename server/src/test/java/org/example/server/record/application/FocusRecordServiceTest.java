@@ -18,6 +18,8 @@ import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.coin.application.CoinService;
+import org.example.server.coin.domain.enums.CoinReferenceType;
+import org.example.server.coin.domain.enums.CoinTransactionType;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -93,6 +95,30 @@ class FocusRecordServiceTest {
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 11, 0));
         assertThat(saved.getFocusedDate()).isEqualTo(LocalDate.of(2024, 1, 15));
         assertThat(response.focusMinutes()).isEqualTo(25);
+        verify(coinService).changeBalance(
+            any(),
+            org.mockito.ArgumentMatchers.eq(FocusRecordService.FOCUS_COMPLETION_REWARD),
+            org.mockito.ArgumentMatchers.eq(CoinTransactionType.FOCUS_COMPLETION),
+            org.mockito.ArgumentMatchers.eq(CoinReferenceType.FOCUS_RECORD),
+            any()
+        );
+    }
+
+    @Test
+    @DisplayName("전체 타이머 세션보다 짧으면 집중 기록과 코인 보상을 저장하지 않는다")
+    void doesNotRewardIncompleteTimerSession() {
+        Beverage beverage = beverage();
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 59, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 6_000, startedAt, completedAt);
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
+        verify(focusRecordRepository, never()).save(any());
+        verify(coinService, never()).changeBalance(any(), any(Long.class), any(), any(), any());
     }
 
     @Test
