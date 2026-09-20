@@ -25,6 +25,7 @@ public class AttendanceService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     public static final long DAILY_ATTENDANCE_REWARD = 10L;
+    public static final long SEVENTH_DAY_ATTENDANCE_REWARD = 70L;
 
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final UserRepository userRepository;
@@ -40,19 +41,22 @@ public class AttendanceService {
 
         int consecutiveDay = attendanceRecordRepository.findLatestByUserId(user.getId())
             .filter(record -> record.getAttendanceDate().plusDays(1).equals(today))
-            .map(record -> record.getConsecutiveDay() + 1)
+            .map(record -> record.getConsecutiveDay() == 7 ? 1 : record.getConsecutiveDay() + 1)
             .orElse(1);
+        long grantedCoin = consecutiveDay == 7
+            ? SEVENTH_DAY_ATTENDANCE_REWARD
+            : DAILY_ATTENDANCE_REWARD;
         AttendanceRecord record = attendanceRecordRepository.save(
-            AttendanceRecord.create(user, today, consecutiveDay, DAILY_ATTENDANCE_REWARD)
+            AttendanceRecord.create(user, today, consecutiveDay, grantedCoin)
         );
         long balance = coinService.changeBalance(
             user,
-            DAILY_ATTENDANCE_REWARD,
+            grantedCoin,
             CoinTransactionType.ATTENDANCE,
             CoinReferenceType.ATTENDANCE,
             record.getId()
         );
-        return new AttendanceResponse(today, consecutiveDay, DAILY_ATTENDANCE_REWARD, balance);
+        return new AttendanceResponse(today, consecutiveDay, grantedCoin, balance);
     }
 
     private User findActiveUser(String userId) {
