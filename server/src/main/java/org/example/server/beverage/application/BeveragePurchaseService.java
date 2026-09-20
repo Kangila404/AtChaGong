@@ -36,6 +36,14 @@ public class BeveragePurchaseService {
     @Transactional
     public BeveragePurchaseResponse purchase(String userId, Long beverageId) {
         User user = findActiveUser(userId);
+        Beverage beverage = findPurchasableBeverage(beverageId);
+        validateNotOwned(user, beverageId);
+        long balance = deductCoin(user, beverage);
+        saveOwnership(user, beverage, LocalDateTime.now(SEOUL_ZONE));
+        return new BeveragePurchaseResponse(beverageId, beverage.getName(), beverage.getPrice(), balance);
+    }
+
+    private Beverage findPurchasableBeverage(Long beverageId) {
         Beverage beverage = beverageRepository.findById(beverageId)
             .orElseThrow(() -> new BeverageException(BeverageErrorCode.BEVERAGE_NOT_FOUND));
         LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
@@ -48,21 +56,27 @@ public class BeveragePurchaseService {
         if (beverage.getPrice() < Beverage.MIN_SALE_PRICE) {
             throw new BeverageException(BeverageErrorCode.BEVERAGE_NOT_ON_SALE);
         }
+        return beverage;
+    }
+
+    private void validateNotOwned(User user, Long beverageId) {
         if (userBeverageRepository.existsByUserIdAndBeverageId(user.getId(), beverageId)) {
             throw new BeverageException(BeverageErrorCode.BEVERAGE_ALREADY_OWNED);
         }
+    }
 
-        long balance = coinService.changeBalance(
+    private long deductCoin(User user, Beverage beverage) {
+        return coinService.changeBalance(
             user,
             -beverage.getPrice(),
             CoinTransactionType.BEVERAGE_PURCHASE,
             CoinReferenceType.BEVERAGE,
-            beverageId
+            beverage.getId()
         );
-        userBeverageRepository.save(UserBeverage.create(
-            user, beverage, BeverageAcquisitionType.PURCHASE, now
-        ));
-        return new BeveragePurchaseResponse(beverageId, beverage.getName(), beverage.getPrice(), balance);
+    }
+
+    private void saveOwnership(User user, Beverage beverage, LocalDateTime acquiredAt) {
+        userBeverageRepository.save(UserBeverage.create(user, beverage, BeverageAcquisitionType.PURCHASE, acquiredAt));
     }
 
     private User findActiveUser(String userId) {
