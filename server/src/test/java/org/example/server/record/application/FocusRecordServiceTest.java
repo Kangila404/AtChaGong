@@ -17,6 +17,7 @@ import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
+import org.example.server.coin.application.CoinService;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -57,6 +58,9 @@ class FocusRecordServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CoinService coinService;
 
     @Test
     @DisplayName("유효한 요청이면 집중 기록을 저장한다")
