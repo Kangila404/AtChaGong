@@ -46,13 +46,22 @@ public class FocusRecordService {
         validateUserStatus(user.getUserStatus());
         validateCreateRequest(request);
 
-        Beverage beverage = findBeverageByIdOrThrow(request.beverageId());
-        validateBeverageOwnership(user.getId(), beverage.getId());
+        Beverage beverage = findOwnedBeverage(user.getId(), request.beverageId());
+        FocusRecord savedFocusRecord = saveFocusRecord(user, beverage, request);
+
+        return toFocusRecordResponse(savedFocusRecord);
+    }
+
+    private Beverage findOwnedBeverage(Long userId, Long beverageId) {
+        Beverage beverage = findBeverageByIdOrThrow(beverageId);
+        validateBeverageOwnership(userId, beverage.getId());
+        return beverage;
+    }
+
+    private FocusRecord saveFocusRecord(User user, Beverage beverage, CreateFocusRecordRequest request) {
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
-
         validateDuplicateFocusRecord(user.getId(), startedAt);
-
         FocusRecord focusRecord = FocusRecord.create(
             user.getId(),
             beverage,
@@ -63,13 +72,12 @@ public class FocusRecordService {
             startedAt,
             completedAt
         );
-        FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
+        return focusRecordRepository.save(focusRecord);
+    }
 
-        return FocusRecordResponse.of(
-            savedFocusRecord,
-            toSeoulOffsetDateTime(savedFocusRecord.getStartedAt()),
-            toSeoulOffsetDateTime(savedFocusRecord.getCompletedAt())
-        );
+    private FocusRecordResponse toFocusRecordResponse(FocusRecord focusRecord) {
+        return FocusRecordResponse.of(focusRecord, toSeoulOffsetDateTime(focusRecord.getStartedAt()),
+            toSeoulOffsetDateTime(focusRecord.getCompletedAt()));
     }
 
     @Transactional(readOnly = true)
