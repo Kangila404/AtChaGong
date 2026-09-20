@@ -64,7 +64,7 @@ class FocusRecordServiceTest {
         Beverage beverage = beverage();
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_500, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
         given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
         given(beverage.getId()).willReturn(BEVERAGE_ID);
@@ -82,8 +82,8 @@ class FocusRecordServiceTest {
         assertThat(saved.getUserId()).isEqualTo(USER_PK);
         assertThat(saved.getBeverage()).isSameAs(beverage);
         assertThat(saved.getFocusMinutes()).isEqualTo(25);
-        assertThat(saved.getBreakMinutes()).isEqualTo(FocusRecord.FIXED_BREAK_MINUTES);
-        assertThat(saved.getCycleCount()).isEqualTo(FocusRecord.FIXED_CYCLE_COUNT);
+        assertThat(saved.getBreakMinutes()).isEqualTo(5);
+        assertThat(saved.getCycleCount()).isEqualTo(4);
         assertThat(saved.getFocusedSeconds()).isEqualTo(1_500);
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
@@ -96,7 +96,7 @@ class FocusRecordServiceTest {
     void createFocusRecordWithIncompleteFocusThrowsException() {
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_499, startedAt, completedAt);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_499, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
 
         assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
@@ -112,10 +112,10 @@ class FocusRecordServiceTest {
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 10, 0, 0, ZoneOffset.UTC);
         CreateFocusRecordRequest shortRequest = new CreateFocusRecordRequest(
-            BEVERAGE_ID, 20, 1_200, startedAt, completedAt
+            BEVERAGE_ID, 20, 5, 4, 1_200, startedAt, completedAt
         );
         CreateFocusRecordRequest longRequest = new CreateFocusRecordRequest(
-            BEVERAGE_ID, 65, 3_900, startedAt, completedAt
+            BEVERAGE_ID, 65, 5, 4, 3_900, startedAt, completedAt
         );
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
 
@@ -236,7 +236,7 @@ class FocusRecordServiceTest {
     private CreateFocusRecordRequest validRequest() {
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
+        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_500, startedAt, completedAt);
     }
 
     private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt) {

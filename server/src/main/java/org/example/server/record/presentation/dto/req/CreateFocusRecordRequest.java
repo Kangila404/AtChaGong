@@ -16,6 +16,14 @@ public record CreateFocusRecordRequest(
 
     @NotNull
     @Min(1)
+    Integer breakMinutes,
+
+    @NotNull
+    @Min(1)
+    Integer cycleCount,
+
+    @NotNull
+    @Min(1)
     Integer focusedSeconds,
 
     @NotNull
