@@ -8,6 +8,7 @@ import org.example.server.attendance.domain.repository.AttendanceRecordRepositor
 import org.example.server.attendance.exception.AttendanceErrorCode;
 import org.example.server.attendance.exception.AttendanceException;
 import org.example.server.attendance.presentation.dto.res.AttendanceResponse;
+import org.example.server.attendance.presentation.dto.res.AttendanceStatusResponse;
 import org.example.server.coin.application.CoinService;
 import org.example.server.coin.domain.enums.CoinReferenceType;
 import org.example.server.coin.domain.enums.CoinTransactionType;
@@ -30,6 +31,22 @@ public class AttendanceService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final UserRepository userRepository;
     private final CoinService coinService;
+
+    @Transactional(readOnly = true)
+    public AttendanceStatusResponse getStatus(String userId) {
+        User user = findActiveUser(userId);
+        LocalDate today = LocalDate.now(SEOUL_ZONE);
+
+        return attendanceRecordRepository.findByUserIdAndAttendanceDate(user.getId(), today)
+            .map(record -> new AttendanceStatusResponse(true, record.getConsecutiveDay()))
+            .orElseGet(() -> new AttendanceStatusResponse(
+                false,
+                attendanceRecordRepository.findLatestByUserId(user.getId())
+                    .filter(record -> record.getAttendanceDate().equals(today.minusDays(1)))
+                    .map(AttendanceRecord::getConsecutiveDay)
+                    .orElse(0)
+            ));
+    }
 
     @Transactional
     public AttendanceResponse attend(String userId) {

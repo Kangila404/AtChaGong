@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 import org.example.server.attendance.domain.models.AttendanceRecord;
 import org.example.server.attendance.domain.repository.AttendanceRecordRepository;
+import org.example.server.attendance.presentation.dto.res.AttendanceStatusResponse;
 import org.example.server.coin.application.CoinService;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
@@ -27,6 +28,35 @@ class AttendanceServiceTest {
     @Mock private AttendanceRecordRepository attendanceRepository;
     @Mock private UserRepository userRepository;
     @Mock private CoinService coinService;
+
+    @Test
+    void returnsTodayAttendanceStatus() {
+        User user = user();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        AttendanceRecord todayRecord = AttendanceRecord.create(user, today, 3, 10);
+        given(userRepository.findByUserId("user")).willReturn(Optional.of(user));
+        given(attendanceRepository.findByUserIdAndAttendanceDate(1L, today)).willReturn(Optional.of(todayRecord));
+
+        AttendanceStatusResponse response = attendanceService.getStatus("user");
+
+        assertThat(response.attendedToday()).isTrue();
+        assertThat(response.consecutiveDay()).isEqualTo(3);
+    }
+
+    @Test
+    void returnsZeroConsecutiveDaysWhenLatestAttendanceIsNotYesterday() {
+        User user = user();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        AttendanceRecord oldRecord = AttendanceRecord.create(user, today.minusDays(2), 4, 10);
+        given(userRepository.findByUserId("user")).willReturn(Optional.of(user));
+        given(attendanceRepository.findByUserIdAndAttendanceDate(1L, today)).willReturn(Optional.empty());
+        given(attendanceRepository.findLatestByUserId(1L)).willReturn(Optional.of(oldRecord));
+
+        AttendanceStatusResponse response = attendanceService.getStatus("user");
+
+        assertThat(response.attendedToday()).isFalse();
+        assertThat(response.consecutiveDay()).isZero();
+    }
 
     @Test
     void grantsSeventyCoinsOnSeventhConsecutiveDay() {
