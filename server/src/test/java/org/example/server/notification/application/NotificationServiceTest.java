@@ -76,7 +76,7 @@ class NotificationServiceTest {
 
         NotificationSettingResponse response = notificationService.updateNotificationSetting(
             USER_ID,
-            new UpdateNotificationSettingRequest(false, true, false)
+            new UpdateNotificationSettingRequest(false, true, false, true)
         );
 
         assertThat(response.focusStartEnabled()).isFalse();

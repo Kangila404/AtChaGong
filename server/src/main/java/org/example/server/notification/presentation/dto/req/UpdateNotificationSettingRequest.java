@@ -10,6 +10,9 @@ public record UpdateNotificationSettingRequest(
     Boolean focusEndEnabled,
 
     @NotNull
-    Boolean breakEndEnabled
+    Boolean breakEndEnabled,
+
+    @NotNull
+    Boolean seasonalBeverageEnabled
 ) {
 }

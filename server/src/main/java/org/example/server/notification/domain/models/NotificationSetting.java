@@ -34,20 +34,25 @@ public class NotificationSetting extends BaseEntity {
     @Column(name = "break_end_enabled", nullable = false)
     private boolean breakEndEnabled;
 
+    @Column(name = "seasonal_beverage_enabled", nullable = false)
+    private boolean seasonalBeverageEnabled;
+
     private NotificationSetting(Long userId, boolean focusStartEnabled, boolean focusEndEnabled, boolean breakEndEnabled) {
         this.userId = userId;
         this.focusStartEnabled = focusStartEnabled;
         this.focusEndEnabled = focusEndEnabled;
         this.breakEndEnabled = breakEndEnabled;
+        this.seasonalBeverageEnabled = false;
     }
 
     public static NotificationSetting createDefault(Long userId) {
         return new NotificationSetting(userId, true, true, true);
     }
 
-    public void update(boolean focusStartEnabled, boolean focusEndEnabled, boolean breakEndEnabled) {
+    public void update(boolean focusStartEnabled, boolean focusEndEnabled, boolean breakEndEnabled, boolean seasonalBeverageEnabled) {
         this.focusStartEnabled = focusStartEnabled;
         this.focusEndEnabled = focusEndEnabled;
         this.breakEndEnabled = breakEndEnabled;
+        this.seasonalBeverageEnabled = seasonalBeverageEnabled;
     }
 }

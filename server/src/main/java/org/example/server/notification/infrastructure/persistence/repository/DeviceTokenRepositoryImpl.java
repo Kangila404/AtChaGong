@@ -1,6 +1,7 @@
 package org.example.server.notification.infrastructure.persistence.repository;
 
 import java.util.Optional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.notification.domain.models.DeviceToken;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
@@ -20,6 +21,11 @@ public class DeviceTokenRepositoryImpl implements DeviceTokenRepository {
     @Override
     public Optional<DeviceToken> findByToken(String token) {
         return deviceTokenJpaRepository.findByToken(token);
+    }
+
+    @Override
+    public List<DeviceToken> findAllByUserIdAndActiveTrue(Long userId) {
+        return deviceTokenJpaRepository.findAllByUserIdAndActiveTrue(userId);
     }
 
     @Override

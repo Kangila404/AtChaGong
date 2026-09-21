@@ -94,6 +94,7 @@ Required values:
 - `MYSQL_USER`
 - `MYSQL_PASSWORD`
 - `JWT_SECRET`
+- `FCM_CREDENTIALS_FILE` - `./secrets/firebase-service-account.json`
 - `GOOGLE_CLIENT_ID`
 - `APPLE_CLIENT_ID`
 - `KAKAO_CLIENT_ID`
