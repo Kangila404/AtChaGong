@@ -70,7 +70,6 @@ class UserBeverageServiceTest {
         assertThat(response).containsExactly(new UserBeverageResponse(
             2L,
             "latte",
-            "https://example.com/latte.png",
             false,
             acquiredAt.atOffset(ZoneOffset.ofHours(9))
         ));
@@ -140,7 +139,6 @@ class UserBeverageServiceTest {
     private Beverage beverageWithDetails(Long id, String name) {
         Beverage beverage = beverage(id);
         given(beverage.getName()).willReturn(name);
-        given(beverage.getImgUrl()).willReturn("https://example.com/" + name + ".png");
         return beverage;
     }
 }

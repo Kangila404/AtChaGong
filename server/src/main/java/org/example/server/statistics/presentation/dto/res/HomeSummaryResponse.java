@@ -34,8 +34,7 @@ public record HomeSummaryResponse(
                 ? null
                 : new BeverageSummary(
                     defaultBeverage.getId(),
-                    defaultBeverage.getName(),
-                    defaultBeverage.getImgUrl()
+                    defaultBeverage.getName()
                 ),
             new TodayStats(
                 focusedSeconds,
@@ -63,8 +62,7 @@ public record HomeSummaryResponse(
 
     public record BeverageSummary(
         Long beverageId,
-        String name,
-        String imgUrl
+        String name
     ) {
 
     }

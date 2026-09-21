@@ -7,7 +7,6 @@ import org.example.server.beverage.domain.models.Beverage;
 public record BeverageSaleResponse(
     Long beverageId,
     String name,
-    String imgUrl,
     Long price,
     boolean isLimited,
     OffsetDateTime saleEndsAt
@@ -19,7 +18,6 @@ public record BeverageSaleResponse(
         return new BeverageSaleResponse(
             beverage.getId(),
             beverage.getName(),
-            beverage.getImgUrl(),
             beverage.getPrice(),
             beverage.isLimited(),
             beverage.getSaleEndsAt() == null
