@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AttendanceRecordJpaRepository extends JpaRepository<AttendanceRecord, Long> {
 
     Optional<AttendanceRecord> findByUser_IdAndAttendanceDate(Long userId, LocalDate attendanceDate);
+
+    Optional<AttendanceRecord> findFirstByUser_IdOrderByAttendanceDateDesc(Long userId);
 }

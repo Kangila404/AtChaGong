@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
+import org.example.server.coin.application.CoinService;
+import org.example.server.coin.domain.enums.CoinReferenceType;
+import org.example.server.coin.domain.enums.CoinTransactionType;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -34,11 +37,13 @@ public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    public static final long FOCUS_COMPLETION_REWARD = 3L;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
     private final UserBeverageRepository userBeverageRepository;
     private final UserRepository userRepository;
+    private final CoinService coinService;
 
     @Transactional
     public FocusRecordResponse createFocusRecord(String userId, CreateFocusRecordRequest request) {
@@ -72,7 +77,15 @@ public class FocusRecordService {
             startedAt,
             completedAt
         );
-        return focusRecordRepository.save(focusRecord);
+        FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
+        coinService.changeBalance(
+            user,
+            FOCUS_COMPLETION_REWARD,
+            CoinTransactionType.FOCUS_COMPLETION,
+            CoinReferenceType.FOCUS_RECORD,
+            savedFocusRecord.getId()
+        );
+        return savedFocusRecord;
     }
 
     private FocusRecordResponse toFocusRecordResponse(FocusRecord focusRecord) {
@@ -176,6 +189,13 @@ public class FocusRecordService {
         long elapsedSeconds = Duration.between(request.startedAt(), request.completedAt()).getSeconds();
         if (request.focusedSeconds() > elapsedSeconds + 5) {
             throw new RecordException(RecordErrorCode.INVALID_TIME_RANGE);
+        }
+
+        long requiredSessionSeconds = Duration.ofMinutes(
+            (long) request.cycleCount() * (request.focusMinutes() + request.breakMinutes())
+        ).getSeconds();
+        if (elapsedSeconds < requiredSessionSeconds) {
+            throw new RecordException(RecordErrorCode.INCOMPLETE_FOCUS);
         }
     }
 

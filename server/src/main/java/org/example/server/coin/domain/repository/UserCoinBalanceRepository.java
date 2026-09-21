@@ -7,5 +7,7 @@ public interface UserCoinBalanceRepository {
 
     Optional<UserCoinBalance> findByUserId(Long userId);
 
+    Optional<UserCoinBalance> findWithLockByUserId(Long userId);
+
     UserCoinBalance save(UserCoinBalance userCoinBalance);
 }
