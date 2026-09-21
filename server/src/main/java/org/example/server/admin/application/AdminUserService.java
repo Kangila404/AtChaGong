@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.example.server.admin.presentation.dto.req.AdminUpdateUserStatusRequest;
+import org.example.server.admin.presentation.dto.req.AdminCoinTransactionPageRequest;
+import org.example.server.admin.presentation.dto.res.AdminCoinTransactionPageResponse;
+import org.example.server.admin.presentation.dto.res.AdminCoinTransactionResponse;
 import org.example.server.admin.presentation.dto.res.AdminUpdateStatusResponse;
 import org.example.server.admin.presentation.dto.res.AdminUserResponse;
 import org.example.server.admin.presentation.dto.res.AdminUserSummaryResponse;
@@ -17,6 +20,8 @@ import org.example.server.beverage.domain.repository.SelectedBeverageRepository;
 import org.example.server.beverage.domain.repository.UserBeverageRepository;
 import org.example.server.common.exception.AtchagongException;
 import org.example.server.common.exception.CommonErrorCode;
+import org.example.server.coin.domain.models.CoinTransaction;
+import org.example.server.coin.domain.repository.CoinTransactionRepository;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.user.domain.enums.UserRole;
@@ -27,6 +32,9 @@ import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +46,7 @@ public class AdminUserService {
     private final FocusRecordRepository focusRecordRepository;
     private final UserBeverageRepository userBeverageRepository;
     private final SelectedBeverageRepository selectedBeverageRepository;
+    private final CoinTransactionRepository coinTransactionRepository;
 
     @Transactional(readOnly = true)
     public AdminUserSummaryResponse getUserSummary(String userId) {
@@ -105,6 +114,23 @@ public class AdminUserService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public AdminCoinTransactionPageResponse getCoinTransactions(
+        String adminId,
+        String userId,
+        AdminCoinTransactionPageRequest request
+    ) {
+        User admin = findUserByUserIdOrThrow(adminId);
+        validateAdminUser(admin);
+        User user = findUserByUserIdOrThrow(userId);
+        PageRequest pageRequest = toCoinTransactionPageRequest(request);
+        Page<CoinTransaction> transactionPage = coinTransactionRepository.findByUserId(user.getId(), pageRequest);
+        List<AdminCoinTransactionResponse> content = transactionPage.getContent().stream()
+            .map(AdminCoinTransactionResponse::from)
+            .toList();
+        return AdminCoinTransactionPageResponse.of(transactionPage, content);
+    }
+
     @Transactional
     public AdminUpdateStatusResponse updateStatus(
         String adminId,
@@ -131,6 +157,32 @@ public class AdminUserService {
     private void validateAdminUser(User user) {
         if (user.getUserStatus() != UserStatus.ACTIVE || user.getUserRole() != UserRole.ADMIN) {
             throw new AtchagongException(CommonErrorCode.FORBIDDEN);
+        }
+    }
+
+    private PageRequest toCoinTransactionPageRequest(AdminCoinTransactionPageRequest request) {
+        if (request == null) {
+            throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
+        }
+        int page = parsePageValue(request.page(), AdminCoinTransactionPageRequest.DEFAULT_PAGE);
+        int size = parsePageValue(request.size(), AdminCoinTransactionPageRequest.DEFAULT_SIZE);
+        if (page < 0 || size < 1 || size > AdminCoinTransactionPageRequest.MAX_SIZE) {
+            throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
+        }
+        return PageRequest.of(page, size, Sort.by(
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id")
+        ));
+    }
+
+    private int parsePageValue(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            throw new AtchagongException(CommonErrorCode.INVALID_REQUEST);
         }
     }
 

@@ -4,6 +4,7 @@ server/.env
 !server/.env.example
 !**/.env.example
 .env.prod
+/firebase-service-account.json
 
 # Java / Gradle
 **/build/
