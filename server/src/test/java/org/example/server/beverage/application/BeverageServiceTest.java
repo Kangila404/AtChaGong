@@ -33,14 +33,12 @@ class BeverageServiceTest {
         Beverage americano = beverage(
             1L,
             "americano",
-            "https://example.com/americano.png",
             0L,
             null
         );
         Beverage latte = beverage(
             2L,
             "latte",
-            "https://example.com/latte.png",
             500L,
             LocalDateTime.of(2026, 11, 1, 0, 0)
         );
@@ -53,17 +51,15 @@ class BeverageServiceTest {
             .extracting(
                 BeverageSaleResponse::beverageId,
                 BeverageSaleResponse::name,
-                BeverageSaleResponse::imgUrl,
                 BeverageSaleResponse::price,
                 BeverageSaleResponse::isLimited,
                 BeverageSaleResponse::saleEndsAt
             )
             .containsExactly(
-                tuple(1L, "americano", "https://example.com/americano.png", 0L, false, null),
+                tuple(1L, "americano", 0L, false, null),
                 tuple(
                     2L,
                     "latte",
-                    "https://example.com/latte.png",
                     500L,
                     true,
                     LocalDateTime.of(2026, 11, 1, 0, 0).atOffset(ZoneOffset.ofHours(9))
@@ -85,14 +81,12 @@ class BeverageServiceTest {
     private Beverage beverage(
         Long id,
         String name,
-        String imgUrl,
         Long price,
         LocalDateTime saleEndsAt
     ) {
         Beverage beverage = org.mockito.Mockito.mock(Beverage.class);
         given(beverage.getId()).willReturn(id);
         given(beverage.getName()).willReturn(name);
-        given(beverage.getImgUrl()).willReturn(imgUrl);
         given(beverage.getPrice()).willReturn(price);
         given(beverage.getSaleEndsAt()).willReturn(saleEndsAt);
         given(beverage.isLimited()).willReturn(saleEndsAt != null);

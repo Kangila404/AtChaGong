@@ -8,7 +8,6 @@ import org.example.server.beverage.domain.models.UserBeverage;
 public record UserBeverageResponse(
     Long beverageId,
     String name,
-    String imgUrl,
     boolean isSelected,
     OffsetDateTime acquiredAt
 ) {
@@ -19,7 +18,6 @@ public record UserBeverageResponse(
         return new UserBeverageResponse(
             beverage.getId(),
             beverage.getName(),
-            beverage.getImgUrl(),
             isSelected,
             userBeverage.getAcquiredAt().atZone(SEOUL_ZONE).toOffsetDateTime()
         );

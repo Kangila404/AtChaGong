@@ -8,7 +8,6 @@ import org.example.server.beverage.domain.models.Beverage;
 public record AdminBeverageResponse(
     Long beverageId,
     String name,
-    String imgUrl,
     Long price,
     String saleStatus,
     OffsetDateTime saleEndsAt,
@@ -19,7 +18,6 @@ public record AdminBeverageResponse(
         return AdminBeverageResponse.builder()
             .beverageId(beverage.getId())
             .name(beverage.getName())
-            .imgUrl(beverage.getImgUrl())
             .price(beverage.getPrice())
             .saleStatus(beverage.getSaleStatus().name())
             .saleEndsAt(saleEndsAt)

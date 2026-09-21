@@ -5,15 +5,13 @@ import org.example.server.beverage.domain.models.SelectedBeverage;
 
 public record SelectedBeverageResponse(
     Long beverageId,
-    String name,
-    String imgUrl
+    String name
 ) {
     public static SelectedBeverageResponse from(SelectedBeverage selectedBeverage) {
         Beverage beverage = selectedBeverage.getUserBeverage().getBeverage();
         return new SelectedBeverageResponse(
             beverage.getId(),
-            beverage.getName(),
-            beverage.getImgUrl()
+            beverage.getName()
         );
     }
 }

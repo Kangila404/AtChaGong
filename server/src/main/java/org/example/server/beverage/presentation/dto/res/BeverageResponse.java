@@ -4,14 +4,12 @@ import org.example.server.beverage.domain.models.Beverage;
 
 public record BeverageResponse(
     Long beverageId,
-    String name,
-    String imgUrl
+    String name
 ) {
     public static BeverageResponse from(Beverage beverage) {
         return new BeverageResponse(
             beverage.getId(),
-            beverage.getName(),
-            beverage.getImgUrl()
+            beverage.getName()
         );
     }
 }

@@ -65,8 +65,7 @@ class SelectedBeverageServiceTest {
 
         assertThat(response).isEqualTo(new SelectedBeverageResponse(
             1L,
-            "ice",
-            "https://example.com/ice.png"
+            "ice"
         ));
     }
 
@@ -156,7 +155,6 @@ class SelectedBeverageServiceTest {
     private Beverage beverageWithDetails(Long id, String name) {
         Beverage beverage = beverage(id);
         given(beverage.getName()).willReturn(name);
-        given(beverage.getImgUrl()).willReturn("https://example.com/" + name + ".png");
         return beverage;
     }
 }
