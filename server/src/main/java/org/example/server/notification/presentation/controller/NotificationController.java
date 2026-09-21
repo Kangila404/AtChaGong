@@ -6,9 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.notification.application.NotificationService;
 import org.example.server.notification.presentation.dto.req.DeleteDeviceTokenRequest;
+import org.example.server.notification.presentation.dto.req.UpdateDailyNotificationRequest;
 import org.example.server.notification.presentation.dto.req.UpdateNotificationSettingRequest;
 import org.example.server.notification.presentation.dto.req.UpsertDeviceTokenRequest;
 import org.example.server.notification.presentation.dto.res.DeviceTokenResponse;
+import org.example.server.notification.presentation.dto.res.DailyNotificationSettingResponse;
 import org.example.server.notification.presentation.dto.res.NotificationSettingResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,5 +66,22 @@ public class NotificationController {
     ) {
         notificationService.deactivateDeviceToken(userId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/daily-notification")
+    public ResponseEntity<ApiResponse<DailyNotificationSettingResponse>> getDailyNotificationSetting(
+        @AuthenticationPrincipal String userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(notificationService.getDailyNotificationSetting(userId)));
+    }
+
+    @PutMapping("/daily-notification")
+    public ResponseEntity<ApiResponse<DailyNotificationSettingResponse>> updateDailyNotificationSetting(
+        @AuthenticationPrincipal String userId,
+        @RequestBody(required = false) UpdateDailyNotificationRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+            notificationService.updateDailyNotificationSetting(userId, request)
+        ));
     }
 }

@@ -6,15 +6,19 @@ import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.example.server.notification.domain.enums.DeviceType;
 import org.example.server.notification.domain.models.DeviceToken;
+import org.example.server.notification.domain.models.DailyNotificationSetting;
 import org.example.server.notification.domain.models.NotificationSetting;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
+import org.example.server.notification.domain.repositories.DailyNotificationSettingRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
 import org.example.server.notification.exception.NotificationErrorCode;
 import org.example.server.notification.exception.NotificationException;
 import org.example.server.notification.presentation.dto.req.DeleteDeviceTokenRequest;
+import org.example.server.notification.presentation.dto.req.UpdateDailyNotificationRequest;
 import org.example.server.notification.presentation.dto.req.UpdateNotificationSettingRequest;
 import org.example.server.notification.presentation.dto.req.UpsertDeviceTokenRequest;
 import org.example.server.notification.presentation.dto.res.DeviceTokenResponse;
+import org.example.server.notification.presentation.dto.res.DailyNotificationSettingResponse;
 import org.example.server.notification.presentation.dto.res.NotificationSettingResponse;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.User;
@@ -33,6 +37,7 @@ public class NotificationService {
 
     private final NotificationSettingRepository notificationSettingRepository;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final DailyNotificationSettingRepository dailyNotificationSettingRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -61,7 +66,8 @@ public class NotificationService {
         notificationSetting.update(
             request.focusStartEnabled(),
             request.focusEndEnabled(),
-            request.breakEndEnabled()
+            request.breakEndEnabled(),
+            request.seasonalBeverageEnabled()
         );
 
         return NotificationSettingResponse.from(notificationSetting);
@@ -99,6 +105,30 @@ public class NotificationService {
             .ifPresent(DeviceToken::deactivate);
     }
 
+    @Transactional(readOnly = true)
+    public DailyNotificationSettingResponse getDailyNotificationSetting(String userId) {
+        User user = findUserByUserIdOrThrow(userId);
+        validateUserStatus(user);
+        DailyNotificationSetting setting = dailyNotificationSettingRepository.findByUserId(user.getId())
+            .orElseGet(() -> DailyNotificationSetting.create(user.getId(), java.time.LocalTime.of(9, 0), false));
+        return DailyNotificationSettingResponse.from(setting);
+    }
+
+    @Transactional
+    public DailyNotificationSettingResponse updateDailyNotificationSetting(
+        String userId, UpdateDailyNotificationRequest request
+    ) {
+        User user = findUserByUserIdOrThrow(userId);
+        validateUserStatus(user);
+        if (request == null || request.notificationTime() == null || request.enabled() == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_SETTING);
+        }
+        DailyNotificationSetting setting = dailyNotificationSettingRepository.findByUserId(user.getId())
+            .orElseGet(() -> DailyNotificationSetting.create(user.getId(), request.notificationTime(), request.enabled()));
+        setting.update(request.notificationTime(), request.enabled());
+        return DailyNotificationSettingResponse.from(dailyNotificationSettingRepository.save(setting));
+    }
+
     private User findUserByUserIdOrThrow(String userId) {
         return userRepository.findByUserId(userId)
             .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
@@ -116,7 +146,8 @@ public class NotificationService {
         if (request == null
             || request.focusStartEnabled() == null
             || request.focusEndEnabled() == null
-            || request.breakEndEnabled() == null) {
+            || request.breakEndEnabled() == null
+            || request.seasonalBeverageEnabled() == null) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_SETTING);
         }
     }

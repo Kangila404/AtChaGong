@@ -51,7 +51,9 @@ dependencies {
     // 데이터베이스
     runtimeOnly 'com.mysql:mysql-connector-j'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'com.google.firebase:firebase-admin:9.10.0'
 
     // flyway
     implementation 'org.springframework.boot:spring-boot-starter-flyway'

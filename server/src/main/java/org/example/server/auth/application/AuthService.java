@@ -18,6 +18,11 @@ import org.example.server.auth.presentation.dto.req.RefreshTokenRequest;
 import org.example.server.auth.presentation.dto.res.LoginResponse;
 import org.example.server.auth.presentation.dto.res.LogoutResponse;
 import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
+import org.example.server.beverage.application.UserBeverageService;
+import org.example.server.beverage.application.SelectedBeverageService;
+import org.example.server.beverage.domain.models.UserBeverage;
+import org.example.server.coin.domain.models.UserCoinBalance;
+import org.example.server.coin.domain.repository.UserCoinBalanceRepository;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
 import org.example.server.record.domain.repository.FocusRecordRepository;
@@ -57,6 +62,9 @@ public class AuthService {
     private final TimerSettingRepository timerSettingRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final UserBeverageService userBeverageService;
+    private final SelectedBeverageService selectedBeverageService;
+    private final UserCoinBalanceRepository userCoinBalanceRepository;
 
 
     @Transactional
@@ -148,6 +156,9 @@ public class AuthService {
         User user = userRepository.save(
             User.createSocialUser(defaultProfileImg)
         );
+        userCoinBalanceRepository.save(UserCoinBalance.create(user));
+        UserBeverage defaultOwnership = userBeverageService.grantDefaultBeverage(user);
+        selectedBeverageService.selectDefaultBeverage(user, defaultOwnership);
 
         AuthAccount authAccount = AuthAccount.create(user, authType, providerId);
         return authAccountRepository.save(authAccount);
@@ -165,6 +176,9 @@ public class AuthService {
         ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
             .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
         user.reactivateForRejoin(defaultProfileImg);
+        selectedBeverageService.clearSelection(user);
+        UserBeverage defaultOwnership = userBeverageService.resetToDefaultBeverage(user);
+        selectedBeverageService.selectDefaultBeverage(user, defaultOwnership);
     }
 
 

@@ -1,12 +1,16 @@
 package org.example.server.beverage.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
-import org.example.server.beverage.presentation.dto.res.BeverageResponse;
+import org.example.server.beverage.presentation.dto.res.BeverageSaleResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,34 +30,66 @@ class BeverageServiceTest {
     @Test
     @DisplayName("음료 목록을 응답 DTO로 변환해서 반환한다")
     void getBeveragesReturnsBeverageResponses() {
-        Beverage americano = beverage(1L, "americano", "https://example.com/americano.png");
-        Beverage latte = beverage(2L, "latte", "https://example.com/latte.png");
-        given(beverageRepository.findAll()).willReturn(List.of(americano, latte));
+        Beverage americano = beverage(
+            1L,
+            "americano",
+            0L,
+            null
+        );
+        Beverage latte = beverage(
+            2L,
+            "latte",
+            500L,
+            LocalDateTime.of(2026, 11, 1, 0, 0)
+        );
+        given(beverageRepository.findAllAvailableForSale(any(LocalDateTime.class)))
+            .willReturn(List.of(americano, latte));
 
-        List<BeverageResponse> response = beverageService.getBeverages();
+        List<BeverageSaleResponse> response = beverageService.getBeverages();
 
-        assertThat(response).hasSize(2);
-        assertThat(response.get(0).beverageId()).isEqualTo(1L);
-        assertThat(response.get(0).name()).isEqualTo("americano");
-        assertThat(response.get(0).imgUrl()).isEqualTo("https://example.com/americano.png");
-        assertThat(response.get(1).beverageId()).isEqualTo(2L);
+        assertThat(response)
+            .extracting(
+                BeverageSaleResponse::beverageId,
+                BeverageSaleResponse::name,
+                BeverageSaleResponse::price,
+                BeverageSaleResponse::isLimited,
+                BeverageSaleResponse::saleEndsAt
+            )
+            .containsExactly(
+                tuple(1L, "americano", 0L, false, null),
+                tuple(
+                    2L,
+                    "latte",
+                    500L,
+                    true,
+                    LocalDateTime.of(2026, 11, 1, 0, 0).atOffset(ZoneOffset.ofHours(9))
+                )
+            );
     }
 
     @Test
     @DisplayName("음료가 없으면 빈 목록을 반환한다")
     void getBeveragesWithoutBeveragesReturnsEmptyList() {
-        given(beverageRepository.findAll()).willReturn(List.of());
+        given(beverageRepository.findAllAvailableForSale(any(LocalDateTime.class)))
+            .willReturn(List.of());
 
-        List<BeverageResponse> response = beverageService.getBeverages();
+        List<BeverageSaleResponse> response = beverageService.getBeverages();
 
         assertThat(response).isEmpty();
     }
 
-    private Beverage beverage(Long id, String name, String imgUrl) {
+    private Beverage beverage(
+        Long id,
+        String name,
+        Long price,
+        LocalDateTime saleEndsAt
+    ) {
         Beverage beverage = org.mockito.Mockito.mock(Beverage.class);
         given(beverage.getId()).willReturn(id);
         given(beverage.getName()).willReturn(name);
-        given(beverage.getImgUrl()).willReturn(imgUrl);
+        given(beverage.getPrice()).willReturn(price);
+        given(beverage.getSaleEndsAt()).willReturn(saleEndsAt);
+        given(beverage.isLimited()).willReturn(saleEndsAt != null);
         return beverage;
     }
 }

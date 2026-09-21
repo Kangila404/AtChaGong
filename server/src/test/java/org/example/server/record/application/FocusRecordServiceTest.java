@@ -14,7 +14,12 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.example.server.beverage.domain.models.Beverage;
+import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.domain.repository.UserBeverageRepository;
+import org.example.server.coin.application.CoinService;
+import org.example.server.coin.domain.enums.CoinReferenceType;
+import org.example.server.coin.domain.enums.CoinTransactionType;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -51,17 +56,26 @@ class FocusRecordServiceTest {
     private BeverageRepository beverageRepository;
 
     @Mock
+    private UserBeverageRepository userBeverageRepository;
+
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CoinService coinService;
 
     @Test
     @DisplayName("유효한 요청이면 집중 기록을 저장한다")
     void createFocusRecordSavesRecord() {
         Beverage beverage = beverage();
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
-        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 2, 0, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 6_000, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
         given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
+        given(beverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID))
+            .willReturn(Optional.of(ownedBeverage()));
         given(focusRecordRepository.existsByUserIdAndStartedAt(USER_PK, LocalDateTime.of(2024, 1, 15, 9, 0)))
             .willReturn(false);
         given(focusRecordRepository.save(any(FocusRecord.class))).willAnswer(invocation -> invocation.getArgument(0));
@@ -74,19 +88,29 @@ class FocusRecordServiceTest {
         assertThat(saved.getUserId()).isEqualTo(USER_PK);
         assertThat(saved.getBeverage()).isSameAs(beverage);
         assertThat(saved.getFocusMinutes()).isEqualTo(25);
-        assertThat(saved.getFocusedSeconds()).isEqualTo(1_500);
+        assertThat(saved.getBreakMinutes()).isEqualTo(5);
+        assertThat(saved.getCycleCount()).isEqualTo(4);
+        assertThat(saved.getFocusedSeconds()).isEqualTo(6_000);
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
-        assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
+        assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 11, 0));
         assertThat(saved.getFocusedDate()).isEqualTo(LocalDate.of(2024, 1, 15));
         assertThat(response.focusMinutes()).isEqualTo(25);
+        verify(coinService).changeBalance(
+            any(),
+            org.mockito.ArgumentMatchers.eq(FocusRecordService.FOCUS_COMPLETION_REWARD),
+            org.mockito.ArgumentMatchers.eq(CoinTransactionType.FOCUS_COMPLETION),
+            org.mockito.ArgumentMatchers.eq(CoinReferenceType.FOCUS_RECORD),
+            any()
+        );
     }
 
     @Test
-    @DisplayName("집중 시간이 완료 기준보다 짧으면 저장하지 않는다")
-    void createFocusRecordWithIncompleteFocusThrowsException() {
+    @DisplayName("전체 타이머 세션보다 짧으면 집중 기록과 코인 보상을 저장하지 않는다")
+    void doesNotRewardIncompleteTimerSession() {
+        Beverage beverage = beverage();
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
-        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_499, startedAt, completedAt);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 59, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 6_000, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
 
         assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
@@ -94,6 +118,98 @@ class FocusRecordServiceTest {
             .extracting("code")
             .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
         verify(focusRecordRepository, never()).save(any());
+        verify(coinService, never()).changeBalance(any(), any(Long.class), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("집중 시간이 완료 기준보다 짧으면 저장하지 않는다")
+    void createFocusRecordWithIncompleteFocusThrowsException() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 2, 0, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_499, startedAt, completedAt);
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("집중 시간이 25분 미만이거나 60분을 초과하면 저장하지 않는다")
+    void createFocusRecordWithOutOfRangeFocusMinutesThrowsException() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 10, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest shortRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 20, 5, 4, 1_200, startedAt, completedAt
+        );
+        CreateFocusRecordRequest longRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 65, 5, 4, 3_900, startedAt, completedAt
+        );
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, shortRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, longRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 음료로 집중 기록을 생성하면 음료 없음 예외를 반환한다")
+    void createFocusRecordWithMissingBeverageThrowsException() {
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.BEVERAGE_NOT_FOUND.name());
+        verify(userBeverageRepository, never()).findByUserIdAndBeverageId(any(), any());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("보유하지 않은 음료로 집중 기록을 생성하면 보유하지 않은 음료 예외를 반환한다")
+    void createFocusRecordWithUnownedBeverageThrowsException() {
+        Beverage beverage = beverage();
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
+        given(beverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.BEVERAGE_NOT_OWNED.name());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("판매 종료된 음료라도 보유 중이면 집중 기록을 저장한다")
+    void createFocusRecordWithOwnedEndedBeverageSavesRecord() {
+        Beverage endedBeverage = beverage();
+        CreateFocusRecordRequest request = validRequest();
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(endedBeverage));
+        given(endedBeverage.getId()).willReturn(BEVERAGE_ID);
+        given(userBeverageRepository.findByUserIdAndBeverageId(USER_PK, BEVERAGE_ID))
+            .willReturn(Optional.of(ownedBeverage()));
+        given(focusRecordRepository.existsByUserIdAndStartedAt(USER_PK, LocalDateTime.of(2024, 1, 15, 9, 0)))
+            .willReturn(false);
+        given(focusRecordRepository.save(any(FocusRecord.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        focusRecordService.createFocusRecord(USER_ID, request);
+
+        verify(focusRecordRepository).save(any(FocusRecord.class));
     }
 
     @Test
@@ -143,11 +259,23 @@ class FocusRecordServiceTest {
         return org.mockito.Mockito.mock(Beverage.class);
     }
 
+    private UserBeverage ownedBeverage() {
+        return org.mockito.Mockito.mock(UserBeverage.class);
+    }
+
+    private CreateFocusRecordRequest validRequest() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 2, 0, 0, 0, ZoneOffset.UTC);
+        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 6_000, startedAt, completedAt);
+    }
+
     private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt) {
         return FocusRecord.create(
             USER_PK,
             beverage,
             focusMinutes,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             focusedSeconds,
             startedAt,
             startedAt.plusMinutes(30)

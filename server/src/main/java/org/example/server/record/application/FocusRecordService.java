@@ -12,6 +12,10 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.server.beverage.domain.models.Beverage;
 import org.example.server.beverage.domain.repository.BeverageRepository;
+import org.example.server.beverage.domain.repository.UserBeverageRepository;
+import org.example.server.coin.application.CoinService;
+import org.example.server.coin.domain.enums.CoinReferenceType;
+import org.example.server.coin.domain.enums.CoinTransactionType;
 import org.example.server.record.domain.models.FocusRecord;
 import org.example.server.record.domain.repository.FocusRecordRepository;
 import org.example.server.record.exception.RecordErrorCode;
@@ -33,10 +37,13 @@ public class FocusRecordService {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    public static final long FOCUS_COMPLETION_REWARD = 3L;
 
     private final FocusRecordRepository focusRecordRepository;
     private final BeverageRepository beverageRepository;
+    private final UserBeverageRepository userBeverageRepository;
     private final UserRepository userRepository;
+    private final CoinService coinService;
 
     @Transactional
     public FocusRecordResponse createFocusRecord(String userId, CreateFocusRecordRequest request) {
@@ -44,27 +51,46 @@ public class FocusRecordService {
         validateUserStatus(user.getUserStatus());
         validateCreateRequest(request);
 
-        Beverage beverage = findBeverageByIdOrThrow(request.beverageId());
+        Beverage beverage = findOwnedBeverage(user.getId(), request.beverageId());
+        FocusRecord savedFocusRecord = saveFocusRecord(user, beverage, request);
+
+        return toFocusRecordResponse(savedFocusRecord);
+    }
+
+    private Beverage findOwnedBeverage(Long userId, Long beverageId) {
+        Beverage beverage = findBeverageByIdOrThrow(beverageId);
+        validateBeverageOwnership(userId, beverage.getId());
+        return beverage;
+    }
+
+    private FocusRecord saveFocusRecord(User user, Beverage beverage, CreateFocusRecordRequest request) {
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
-
         validateDuplicateFocusRecord(user.getId(), startedAt);
-
         FocusRecord focusRecord = FocusRecord.create(
             user.getId(),
             beverage,
             request.focusMinutes(),
+            request.breakMinutes(),
+            request.cycleCount(),
             request.focusedSeconds(),
             startedAt,
             completedAt
         );
         FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
-
-        return FocusRecordResponse.of(
-            savedFocusRecord,
-            toSeoulOffsetDateTime(savedFocusRecord.getStartedAt()),
-            toSeoulOffsetDateTime(savedFocusRecord.getCompletedAt())
+        coinService.changeBalance(
+            user,
+            FOCUS_COMPLETION_REWARD,
+            CoinTransactionType.FOCUS_COMPLETION,
+            CoinReferenceType.FOCUS_RECORD,
+            savedFocusRecord.getId()
         );
+        return savedFocusRecord;
+    }
+
+    private FocusRecordResponse toFocusRecordResponse(FocusRecord focusRecord) {
+        return FocusRecordResponse.of(focusRecord, toSeoulOffsetDateTime(focusRecord.getStartedAt()),
+            toSeoulOffsetDateTime(focusRecord.getCompletedAt()));
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +120,11 @@ public class FocusRecordService {
             .orElseThrow(() -> new RecordException(RecordErrorCode.BEVERAGE_NOT_FOUND));
     }
 
+    private void validateBeverageOwnership(Long userId, Long beverageId) {
+        userBeverageRepository.findByUserIdAndBeverageId(userId, beverageId)
+            .orElseThrow(() -> new RecordException(RecordErrorCode.BEVERAGE_NOT_OWNED));
+    }
+
     private void validateUserStatus(UserStatus userStatus){
         switch (userStatus) {
             case WITHDRAWN -> throw new UserException(UserErrorCode.WITHDRAWN_USER);
@@ -108,12 +139,14 @@ public class FocusRecordService {
         }
         validateTimeRange(request);
         validateFocusMinutes(request.focusMinutes());
+        validateBreakMinutes(request.breakMinutes());
+        validateCycleCount(request.cycleCount());
         validateFocusedSeconds(request.focusedSeconds());
         validateFocusedSecondsRange(request);
     }
 
     private void validateFocusMinutes(Integer focusMinutes) {
-        if (focusMinutes == null || focusMinutes < 5 || focusMinutes > 180 || focusMinutes % 5 != 0) {
+        if (focusMinutes == null || focusMinutes < 25 || focusMinutes > 60 || focusMinutes % 5 != 0) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUS_MINUTES);
         }
     }
@@ -121,6 +154,18 @@ public class FocusRecordService {
     private void validateFocusedSeconds(Integer focusedSeconds) {
         if (focusedSeconds == null || focusedSeconds < 1) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUSED_SECONDS);
+        }
+    }
+
+    private void validateBreakMinutes(Integer breakMinutes) {
+        if (breakMinutes == null || breakMinutes < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    private void validateCycleCount(Integer cycleCount) {
+        if (cycleCount == null || cycleCount < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
         }
     }
 
@@ -144,6 +189,13 @@ public class FocusRecordService {
         long elapsedSeconds = Duration.between(request.startedAt(), request.completedAt()).getSeconds();
         if (request.focusedSeconds() > elapsedSeconds + 5) {
             throw new RecordException(RecordErrorCode.INVALID_TIME_RANGE);
+        }
+
+        long requiredSessionSeconds = Duration.ofMinutes(
+            (long) request.cycleCount() * (request.focusMinutes() + request.breakMinutes())
+        ).getSeconds();
+        if (elapsedSeconds < requiredSessionSeconds) {
+            throw new RecordException(RecordErrorCode.INCOMPLETE_FOCUS);
         }
     }
 

@@ -5,6 +5,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.example.server.beverage.application.UserBeverageService;
+import org.example.server.beverage.application.SelectedBeverageService;
+import org.example.server.beverage.presentation.dto.req.SelectBeverageRequest;
+import org.example.server.beverage.presentation.dto.res.SelectedBeverageResponse;
+import org.example.server.beverage.presentation.dto.res.UserBeverageResponse;
 import org.example.server.common.response.ApiResponse;
 import org.example.server.user.application.UserService;
 import org.example.server.user.presentation.dto.req.OnboardingRequest;
@@ -23,6 +28,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -35,6 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserBeverageService userBeverageService;
+    private final SelectedBeverageService selectedBeverageService;
 
     @Operation(summary = "유저 정보 조회 API")
     @GetMapping("/me")
@@ -43,6 +51,34 @@ public class UserController {
     ){
         UserMeResponse response = userService.getMe(userId);
         return ResponseEntity.ok(ApiResponse.success((response)));
+    }
+
+    @Operation(summary = "내 보유 음료 목록 조회 API")
+    @GetMapping("/me/beverages")
+    public ResponseEntity<ApiResponse<List<UserBeverageResponse>>> getUserBeverages(
+        @AuthenticationPrincipal String userId
+    ) {
+        List<UserBeverageResponse> response = userBeverageService.getUserBeverages(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "현재 선택 음료 조회 API")
+    @GetMapping("/me/selected-beverage")
+    public ResponseEntity<ApiResponse<SelectedBeverageResponse>> getSelectedBeverage(
+        @AuthenticationPrincipal String userId
+    ) {
+        SelectedBeverageResponse response = selectedBeverageService.getSelectedBeverage(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "현재 음료 선택 API")
+    @PutMapping("/me/selected-beverage")
+    public ResponseEntity<ApiResponse<SelectedBeverageResponse>> selectBeverage(
+        @AuthenticationPrincipal String userId,
+        @RequestBody(required = false) SelectBeverageRequest request
+    ) {
+        SelectedBeverageResponse response = selectedBeverageService.selectBeverage(userId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "닉네임 갱신 API")
