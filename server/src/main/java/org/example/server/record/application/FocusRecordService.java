@@ -46,28 +46,38 @@ public class FocusRecordService {
         validateUserStatus(user.getUserStatus());
         validateCreateRequest(request);
 
-        Beverage beverage = findBeverageByIdOrThrow(request.beverageId());
-        validateBeverageOwnership(user.getId(), beverage.getId());
+        Beverage beverage = findOwnedBeverage(user.getId(), request.beverageId());
+        FocusRecord savedFocusRecord = saveFocusRecord(user, beverage, request);
+
+        return toFocusRecordResponse(savedFocusRecord);
+    }
+
+    private Beverage findOwnedBeverage(Long userId, Long beverageId) {
+        Beverage beverage = findBeverageByIdOrThrow(beverageId);
+        validateBeverageOwnership(userId, beverage.getId());
+        return beverage;
+    }
+
+    private FocusRecord saveFocusRecord(User user, Beverage beverage, CreateFocusRecordRequest request) {
         LocalDateTime startedAt = toSeoulLocalDateTime(request.startedAt());
         LocalDateTime completedAt = toSeoulLocalDateTime(request.completedAt());
-
         validateDuplicateFocusRecord(user.getId(), startedAt);
-
         FocusRecord focusRecord = FocusRecord.create(
             user.getId(),
             beverage,
             request.focusMinutes(),
+            request.breakMinutes(),
+            request.cycleCount(),
             request.focusedSeconds(),
             startedAt,
             completedAt
         );
-        FocusRecord savedFocusRecord = focusRecordRepository.save(focusRecord);
+        return focusRecordRepository.save(focusRecord);
+    }
 
-        return FocusRecordResponse.of(
-            savedFocusRecord,
-            toSeoulOffsetDateTime(savedFocusRecord.getStartedAt()),
-            toSeoulOffsetDateTime(savedFocusRecord.getCompletedAt())
-        );
+    private FocusRecordResponse toFocusRecordResponse(FocusRecord focusRecord) {
+        return FocusRecordResponse.of(focusRecord, toSeoulOffsetDateTime(focusRecord.getStartedAt()),
+            toSeoulOffsetDateTime(focusRecord.getCompletedAt()));
     }
 
     @Transactional(readOnly = true)
@@ -116,12 +126,14 @@ public class FocusRecordService {
         }
         validateTimeRange(request);
         validateFocusMinutes(request.focusMinutes());
+        validateBreakMinutes(request.breakMinutes());
+        validateCycleCount(request.cycleCount());
         validateFocusedSeconds(request.focusedSeconds());
         validateFocusedSecondsRange(request);
     }
 
     private void validateFocusMinutes(Integer focusMinutes) {
-        if (focusMinutes == null || focusMinutes < 5 || focusMinutes > 180 || focusMinutes % 5 != 0) {
+        if (focusMinutes == null || focusMinutes < 25 || focusMinutes > 60 || focusMinutes % 5 != 0) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUS_MINUTES);
         }
     }
@@ -129,6 +141,18 @@ public class FocusRecordService {
     private void validateFocusedSeconds(Integer focusedSeconds) {
         if (focusedSeconds == null || focusedSeconds < 1) {
             throw new RecordException(RecordErrorCode.INVALID_FOCUSED_SECONDS);
+        }
+    }
+
+    private void validateBreakMinutes(Integer breakMinutes) {
+        if (breakMinutes == null || breakMinutes < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    private void validateCycleCount(Integer cycleCount) {
+        if (cycleCount == null || cycleCount < 1) {
+            throw new RecordException(RecordErrorCode.INVALID_REQUEST);
         }
     }
 

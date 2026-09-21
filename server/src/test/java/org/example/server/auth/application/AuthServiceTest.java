@@ -31,6 +31,8 @@ import org.example.server.auth.presentation.dto.res.RefreshTokenResponse;
 import org.example.server.beverage.application.UserBeverageService;
 import org.example.server.beverage.application.SelectedBeverageService;
 import org.example.server.beverage.domain.models.UserBeverage;
+import org.example.server.coin.domain.models.UserCoinBalance;
+import org.example.server.coin.domain.repository.UserCoinBalanceRepository;
 import org.example.server.notification.domain.repositories.DeviceTokenRepository;
 import org.example.server.notification.domain.repositories.NotificationSettingRepository;
 import org.example.server.record.domain.repository.FocusRecordRepository;
@@ -98,6 +100,9 @@ class AuthServiceTest {
     @Mock
     private SelectedBeverageService selectedBeverageService;
 
+    @Mock
+    private UserCoinBalanceRepository userCoinBalanceRepository;
+
     @BeforeEach
     void setUp() {
         authService = new AuthService(
@@ -112,7 +117,8 @@ class AuthServiceTest {
             notificationSettingRepository,
             deviceTokenRepository,
             userBeverageService,
-            selectedBeverageService
+            selectedBeverageService,
+            userCoinBalanceRepository
         );
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
@@ -178,6 +184,10 @@ class AuthServiceTest {
         assertThat(savedUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(savedUser.isOnboardingCompleted()).isFalse();
         assertThat(savedUser.getProfileImg()).isEqualTo(defaultProfileImg);
+        ArgumentCaptor<UserCoinBalance> userCoinBalanceCaptor = ArgumentCaptor.forClass(UserCoinBalance.class);
+        verify(userCoinBalanceRepository).save(userCoinBalanceCaptor.capture());
+        assertThat(userCoinBalanceCaptor.getValue().getUser()).isSameAs(savedUser);
+        assertThat(userCoinBalanceCaptor.getValue().getBalance()).isZero();
         verify(userBeverageService).grantDefaultBeverage(savedUser);
         verify(selectedBeverageService).selectDefaultBeverage(savedUser, defaultOwnership);
 

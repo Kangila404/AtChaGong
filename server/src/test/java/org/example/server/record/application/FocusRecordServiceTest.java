@@ -64,7 +64,7 @@ class FocusRecordServiceTest {
         Beverage beverage = beverage();
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_500, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
         given(beverageRepository.findById(BEVERAGE_ID)).willReturn(Optional.of(beverage));
         given(beverage.getId()).willReturn(BEVERAGE_ID);
@@ -82,6 +82,8 @@ class FocusRecordServiceTest {
         assertThat(saved.getUserId()).isEqualTo(USER_PK);
         assertThat(saved.getBeverage()).isSameAs(beverage);
         assertThat(saved.getFocusMinutes()).isEqualTo(25);
+        assertThat(saved.getBreakMinutes()).isEqualTo(5);
+        assertThat(saved.getCycleCount()).isEqualTo(4);
         assertThat(saved.getFocusedSeconds()).isEqualTo(1_500);
         assertThat(saved.getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 0));
         assertThat(saved.getCompletedAt()).isEqualTo(LocalDateTime.of(2024, 1, 15, 9, 30));
@@ -94,13 +96,38 @@ class FocusRecordServiceTest {
     void createFocusRecordWithIncompleteFocusThrowsException() {
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_499, startedAt, completedAt);
+        CreateFocusRecordRequest request = new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_499, startedAt, completedAt);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
 
         assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, request))
             .isInstanceOf(RecordException.class)
             .extracting("code")
             .isEqualTo(RecordErrorCode.INCOMPLETE_FOCUS.name());
+        verify(focusRecordRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("집중 시간이 25분 미만이거나 60분을 초과하면 저장하지 않는다")
+    void createFocusRecordWithOutOfRangeFocusMinutesThrowsException() {
+        OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 1, 10, 0, 0, ZoneOffset.UTC);
+        CreateFocusRecordRequest shortRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 20, 5, 4, 1_200, startedAt, completedAt
+        );
+        CreateFocusRecordRequest longRequest = new CreateFocusRecordRequest(
+            BEVERAGE_ID, 65, 5, 4, 3_900, startedAt, completedAt
+        );
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, shortRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+        assertThatThrownBy(() -> focusRecordService.createFocusRecord(USER_ID, longRequest))
+            .isInstanceOf(RecordException.class)
+            .extracting("code")
+            .isEqualTo(RecordErrorCode.INVALID_FOCUS_MINUTES.name());
+
         verify(focusRecordRepository, never()).save(any());
     }
 
@@ -209,7 +236,7 @@ class FocusRecordServiceTest {
     private CreateFocusRecordRequest validRequest() {
         OffsetDateTime startedAt = OffsetDateTime.of(2024, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime completedAt = OffsetDateTime.of(2024, 1, 15, 0, 30, 0, 0, ZoneOffset.UTC);
-        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 1_500, startedAt, completedAt);
+        return new CreateFocusRecordRequest(BEVERAGE_ID, 25, 5, 4, 1_500, startedAt, completedAt);
     }
 
     private FocusRecord focusRecord(Beverage beverage, int focusMinutes, int focusedSeconds, LocalDateTime startedAt) {
@@ -217,6 +244,8 @@ class FocusRecordServiceTest {
             USER_PK,
             beverage,
             focusMinutes,
+            FocusRecord.FIXED_BREAK_MINUTES,
+            FocusRecord.FIXED_CYCLE_COUNT,
             focusedSeconds,
             startedAt,
             startedAt.plusMinutes(30)

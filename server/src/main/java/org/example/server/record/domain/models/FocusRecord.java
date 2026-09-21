@@ -24,6 +24,9 @@ import org.example.server.common.entity.BaseEntity;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FocusRecord extends BaseEntity {
 
+    public static final int FIXED_BREAK_MINUTES = 5;
+    public static final int FIXED_CYCLE_COUNT = 4;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,6 +41,12 @@ public class FocusRecord extends BaseEntity {
     // 설정된 집중 시간
     @Column(name = "focus_minutes", nullable = false)
     private int focusMinutes;
+
+    @Column(name = "break_minutes", nullable = false)
+    private int breakMinutes;
+
+    @Column(name = "cycle_count", nullable = false)
+    private int cycleCount;
 
     // 실제 집중한 시간
     @Column(name = "focused_seconds", nullable = false)
@@ -58,6 +67,8 @@ public class FocusRecord extends BaseEntity {
         Long userId,
         Beverage beverage,
         int focusMinutes,
+        int breakMinutes,
+        int cycleCount,
         int focusedSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
@@ -66,6 +77,8 @@ public class FocusRecord extends BaseEntity {
         this.userId = userId;
         this.beverage = beverage;
         this.focusMinutes = focusMinutes;
+        this.breakMinutes = breakMinutes;
+        this.cycleCount = cycleCount;
         this.focusedSeconds = focusedSeconds;
         this.startedAt = startedAt;
         this.completedAt = completedAt;
@@ -76,6 +89,8 @@ public class FocusRecord extends BaseEntity {
         Long userId,
         Beverage beverage,
         int focusMinutes,
+        int breakMinutes,
+        int cycleCount,
         int focusedSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt
@@ -84,10 +99,13 @@ public class FocusRecord extends BaseEntity {
             .userId(userId)
             .beverage(beverage)
             .focusMinutes(focusMinutes)
+            .breakMinutes(breakMinutes)
+            .cycleCount(cycleCount)
             .focusedSeconds(focusedSeconds)
             .startedAt(startedAt)
             .completedAt(completedAt)
             .focusedDate(completedAt.toLocalDate())
             .build();
     }
+
 }
