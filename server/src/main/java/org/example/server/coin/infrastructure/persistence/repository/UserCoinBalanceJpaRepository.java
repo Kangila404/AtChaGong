@@ -12,4 +12,6 @@ public interface UserCoinBalanceJpaRepository extends JpaRepository<UserCoinBala
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<UserCoinBalance> findWithLockByUser_Id(Long userId);
+
+    void deleteByUser_Id(Long userId);
 }

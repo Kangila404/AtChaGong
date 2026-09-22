@@ -10,4 +10,5 @@ public interface AuthAccountRepository {
     Optional<AuthAccount> findByProviderAndProviderId(AuthType provider, String providerId);
 
     AuthAccount save(AuthAccount authAccount);
+    void deleteByUserId(Long userId);
 }

@@ -23,15 +23,12 @@ import org.example.server.beverage.application.SelectedBeverageService;
 import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.coin.domain.models.UserCoinBalance;
 import org.example.server.coin.domain.repository.UserCoinBalanceRepository;
-import org.example.server.notification.domain.repositories.DeviceTokenRepository;
-import org.example.server.notification.domain.repositories.NotificationSettingRepository;
-import org.example.server.record.domain.repository.FocusRecordRepository;
-import org.example.server.timer.domain.repository.TimerSettingRepository;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
 import org.example.server.user.domain.models.User;
 import org.example.server.user.domain.repository.ProfileImgRepository;
 import org.example.server.user.domain.repository.UserRepository;
+import org.example.server.user.application.UserDataDeletionService;
 import org.example.server.user.exception.UserErrorCode;
 import org.example.server.user.exception.UserException;
 import org.springframework.stereotype.Service;
@@ -58,13 +55,10 @@ public class AuthService {
     private final AuthAccountRepository authAccountRepository;
     private final List<SocialAuthProvider> socialAuthProviders;
     private final ProfileImgRepository profileImgRepository;
-    private final FocusRecordRepository focusRecordRepository;
-    private final TimerSettingRepository timerSettingRepository;
-    private final NotificationSettingRepository notificationSettingRepository;
-    private final DeviceTokenRepository deviceTokenRepository;
     private final UserBeverageService userBeverageService;
     private final SelectedBeverageService selectedBeverageService;
     private final UserCoinBalanceRepository userCoinBalanceRepository;
+    private final UserDataDeletionService userDataDeletionService;
 
 
     @Transactional
@@ -94,9 +88,10 @@ public class AuthService {
         );
 
         User user = authAccount.getUser();
-
         if (user.getUserStatus() == UserStatus.WITHDRAWN) {
-            rejoinWithdrawnUser(user);
+            userDataDeletionService.delete(user);
+            authAccount = findOrCreateAuthAccount(request.authType(), socialUserInfo.providerId());
+            user = authAccount.getUser();
         }
 
         validateUserStatus(user.getUserStatus());
@@ -163,24 +158,6 @@ public class AuthService {
         AuthAccount authAccount = AuthAccount.create(user, authType, providerId);
         return authAccountRepository.save(authAccount);
     }
-
-    private void rejoinWithdrawnUser(User user) {
-        Long userId = user.getId();
-
-        refreshTokenRepository.deleteByUserId(userId);
-        focusRecordRepository.deleteByUserId(userId);
-        timerSettingRepository.deleteByUserId(userId);
-        notificationSettingRepository.deleteByUserId(userId);
-        deviceTokenRepository.deleteByUserId(userId);
-
-        ProfileImg defaultProfileImg = profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)
-            .orElseThrow(() -> new UserException(UserErrorCode.PROFILE_NOT_FOUND));
-        user.reactivateForRejoin(defaultProfileImg);
-        selectedBeverageService.clearSelection(user);
-        UserBeverage defaultOwnership = userBeverageService.resetToDefaultBeverage(user);
-        selectedBeverageService.selectDefaultBeverage(user, defaultOwnership);
-    }
-
 
     // ============= 검증 메서드 모음 ============= //
 

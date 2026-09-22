@@ -3,6 +3,7 @@ package org.example.server.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.Optional;
 import org.example.server.user.domain.enums.UserRole;
@@ -32,6 +33,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserDataDeletionService userDataDeletionService;
 
     @Test
     @DisplayName("활성 유저는 내 정보를 조회할 수 있다")
@@ -81,15 +85,14 @@ class UserServiceTest {
 
     @Test
     @DisplayName("회원 탈퇴를 하면 유저 상태가 탈퇴로 변경된다")
-    void withdrawChangesUserStatus() {
+    void withdrawDelegatesToUserDataDeletionService() {
         User user = user(UserStatus.ACTIVE);
         given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(user));
 
         WithdrawUserResponse response = userService.withdraw(USER_ID);
 
         assertThat(response.message()).isEqualTo("success");
-        assertThat(user.getUserStatus()).isEqualTo(UserStatus.WITHDRAWN);
-        assertThat(user.getDeletedAt()).isNotNull();
+        verify(userDataDeletionService).delete(user);
     }
 
     private User user(UserStatus status) {
