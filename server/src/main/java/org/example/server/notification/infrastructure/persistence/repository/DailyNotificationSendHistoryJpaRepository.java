@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DailyNotificationSendHistoryJpaRepository extends JpaRepository<DailyNotificationSendHistory, Long> {
     boolean existsByUserIdAndNotificationDate(Long userId, LocalDate notificationDate);
+    void deleteByUserId(Long userId);
 }

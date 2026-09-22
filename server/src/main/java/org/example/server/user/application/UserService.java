@@ -30,6 +30,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ProfileImgRepository profileImgRepository;
+    private final UserDataDeletionService userDataDeletionService;
 
     @Transactional(readOnly = true)
     public UserMeResponse getMe(String userId){
@@ -50,7 +51,7 @@ public class UserService {
     public WithdrawUserResponse withdraw(String userId){
         User user = findUserByUserIdOrThrow(userId);
         validateUserStatus(user);
-        user.withdraw();
+        userDataDeletionService.delete(user);
         return new WithdrawUserResponse("success");
     }
 

@@ -18,4 +18,6 @@ public interface CoinTransactionRepository {
     CoinTransaction save(CoinTransaction coinTransaction);
 
     Page<CoinTransaction> findByUserId(Long userId, Pageable pageable);
+
+    void deleteByUserId(Long userId);
 }

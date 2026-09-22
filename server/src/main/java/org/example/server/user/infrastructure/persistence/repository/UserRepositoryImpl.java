@@ -31,6 +31,9 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public void delete(User user) { userJpaRepository.delete(user); }
+
+    @Override
     public long countByUserStatusInAndDeletedAtIsNull(Collection<UserStatus> userStatuses) {
         return userJpaRepository.countByUserStatusInAndDeletedAtIsNull(userStatuses);
     }

@@ -27,4 +27,7 @@ public class AuthAccountRepositoryImpl implements AuthAccountRepository {
     public AuthAccount save(AuthAccount authAccount) {
         return authAccountJpaRepository.save(authAccount);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) { authAccountJpaRepository.deleteByUser_Id(userId); }
 }

@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AuthAccountJpaRepository extends JpaRepository<AuthAccount,Long> {
     Optional<AuthAccount> findByProviderAndProviderId(AuthType provider, String providerId);
+    void deleteByUser_Id(Long userId);
 }

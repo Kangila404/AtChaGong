@@ -26,4 +26,9 @@ public class UserCoinBalanceRepositoryImpl implements UserCoinBalanceRepository 
     public UserCoinBalance save(UserCoinBalance userCoinBalance) {
         return userCoinBalanceJpaRepository.save(userCoinBalance);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        userCoinBalanceJpaRepository.deleteByUser_Id(userId);
+    }
 }

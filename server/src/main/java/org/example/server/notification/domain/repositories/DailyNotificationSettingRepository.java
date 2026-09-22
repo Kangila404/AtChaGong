@@ -9,4 +9,5 @@ public interface DailyNotificationSettingRepository {
     Optional<DailyNotificationSetting> findByUserId(Long userId);
     List<DailyNotificationSetting> findAllByNotificationTimeAndEnabledTrue(LocalTime notificationTime);
     DailyNotificationSetting save(DailyNotificationSetting setting);
+    void deleteByUserId(Long userId);
 }

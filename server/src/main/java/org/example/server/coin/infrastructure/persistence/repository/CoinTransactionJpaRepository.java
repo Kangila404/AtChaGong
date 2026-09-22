@@ -17,4 +17,6 @@ public interface CoinTransactionJpaRepository extends JpaRepository<CoinTransact
     );
 
     Page<CoinTransaction> findByUser_Id(Long userId, Pageable pageable);
+
+    void deleteByUser_Id(Long userId);
 }

@@ -15,4 +15,5 @@ public class DailyNotificationSettingRepositoryImpl implements DailyNotification
     public Optional<DailyNotificationSetting> findByUserId(Long userId) { return repository.findByUserId(userId); }
     public List<DailyNotificationSetting> findAllByNotificationTimeAndEnabledTrue(LocalTime time) { return repository.findAllByNotificationTimeAndEnabledTrue(time); }
     public DailyNotificationSetting save(DailyNotificationSetting setting) { return repository.save(setting); }
+    public void deleteByUserId(Long userId) { repository.deleteByUserId(userId); }
 }

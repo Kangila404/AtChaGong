@@ -33,10 +33,7 @@ import org.example.server.beverage.application.SelectedBeverageService;
 import org.example.server.beverage.domain.models.UserBeverage;
 import org.example.server.coin.domain.models.UserCoinBalance;
 import org.example.server.coin.domain.repository.UserCoinBalanceRepository;
-import org.example.server.notification.domain.repositories.DeviceTokenRepository;
-import org.example.server.notification.domain.repositories.NotificationSettingRepository;
-import org.example.server.record.domain.repository.FocusRecordRepository;
-import org.example.server.timer.domain.repository.TimerSettingRepository;
+import org.example.server.user.application.UserDataDeletionService;
 import org.example.server.user.domain.enums.UserRole;
 import org.example.server.user.domain.enums.UserStatus;
 import org.example.server.user.domain.models.ProfileImg;
@@ -83,18 +80,6 @@ class AuthServiceTest {
     private ProfileImgRepository profileImgRepository;
 
     @Mock
-    private FocusRecordRepository focusRecordRepository;
-
-    @Mock
-    private TimerSettingRepository timerSettingRepository;
-
-    @Mock
-    private NotificationSettingRepository notificationSettingRepository;
-
-    @Mock
-    private DeviceTokenRepository deviceTokenRepository;
-
-    @Mock
     private UserBeverageService userBeverageService;
 
     @Mock
@@ -102,6 +87,9 @@ class AuthServiceTest {
 
     @Mock
     private UserCoinBalanceRepository userCoinBalanceRepository;
+
+    @Mock
+    private UserDataDeletionService userDataDeletionService;
 
     @BeforeEach
     void setUp() {
@@ -112,13 +100,10 @@ class AuthServiceTest {
             authAccountRepository,
             List.of(socialAuthProvider),
             profileImgRepository,
-            focusRecordRepository,
-            timerSettingRepository,
-            notificationSettingRepository,
-            deviceTokenRepository,
             userBeverageService,
             selectedBeverageService,
-            userCoinBalanceRepository
+            userCoinBalanceRepository,
+            userDataDeletionService
         );
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", REFRESH_TOKEN_EXPIRATION);
     }
@@ -257,8 +242,16 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("탈퇴한 사용자가 같은 소셜 계정으로 로그인하면 재가입 처리하고 데이터를 초기화한다")
-    void socialLoginWithWithdrawnUserRejoinsAndClearsUserData() {
+    void socialLoginWithLegacyWithdrawnUserCreatesNewAccount() {
         User withdrawnUser = user(UserStatus.WITHDRAWN);
+        User newUser = User.builder()
+            .id(USER_PK)
+            .userId(USER_ID)
+            .nickname("new-user")
+            .userStatus(UserStatus.ACTIVE)
+            .userRole(UserRole.USER)
+            .onboardingCompleted(false)
+            .build();
         UserBeverage defaultOwnership = org.mockito.Mockito.mock(UserBeverage.class);
         ProfileImg defaultProfileImg = ProfileImg.builder()
             .id(DEFAULT_PROFILE_IMG_ID)
@@ -268,11 +261,17 @@ class AuthServiceTest {
         given(socialAuthProvider.supports()).willReturn(AuthType.KAKAO);
         given(socialAuthProvider.verify("credential")).willReturn(new SocialUserInfo("provider-1"));
         given(authAccountRepository.findByProviderAndProviderId(AuthType.KAKAO, "provider-1"))
-            .willReturn(Optional.of(AuthAccount.create(withdrawnUser, AuthType.KAKAO, "provider-1")));
+            .willReturn(
+                Optional.of(AuthAccount.create(withdrawnUser, AuthType.KAKAO, "provider-1")),
+                Optional.empty()
+            );
         given(profileImgRepository.findById(DEFAULT_PROFILE_IMG_ID)).willReturn(Optional.of(defaultProfileImg));
-        given(userBeverageService.resetToDefaultBeverage(withdrawnUser)).willReturn(defaultOwnership);
+        given(userRepository.save(any(User.class))).willReturn(newUser);
+        given(userBeverageService.grantDefaultBeverage(newUser)).willReturn(defaultOwnership);
+        given(authAccountRepository.save(any(AuthAccount.class)))
+            .willReturn(AuthAccount.create(newUser, AuthType.KAKAO, "provider-1"));
         given(jwtTokenProvider.createAccessToken(USER_ID, UserRole.USER.name())).willReturn("access-token");
-        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(withdrawnUser));
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(newUser));
         given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn("refresh-token");
         given(refreshTokenRepository.findByUserId(USER_PK)).willReturn(Optional.empty());
 
@@ -281,20 +280,10 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.isOnboardingCompleted()).isFalse();
-        assertThat(withdrawnUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
-        assertThat(withdrawnUser.isOnboardingCompleted()).isFalse();
-        assertThat(withdrawnUser.getDeletedAt()).isNull();
-        assertThat(withdrawnUser.getProfileImg()).isEqualTo(defaultProfileImg);
-        assertThat(withdrawnUser.getNickname()).startsWith("사용자");
-
-        verify(refreshTokenRepository).deleteByUserId(USER_PK);
-        verify(focusRecordRepository).deleteByUserId(USER_PK);
-        verify(timerSettingRepository).deleteByUserId(USER_PK);
-        verify(notificationSettingRepository).deleteByUserId(USER_PK);
-        verify(deviceTokenRepository).deleteByUserId(USER_PK);
-        verify(userBeverageService).resetToDefaultBeverage(withdrawnUser);
-        verify(selectedBeverageService).clearSelection(withdrawnUser);
-        verify(selectedBeverageService).selectDefaultBeverage(withdrawnUser, defaultOwnership);
+        assertThat(newUser.getUserStatus()).isEqualTo(UserStatus.ACTIVE);
+        verify(userDataDeletionService).delete(withdrawnUser);
+        verify(userBeverageService).grantDefaultBeverage(newUser);
+        verify(selectedBeverageService).selectDefaultBeverage(newUser, defaultOwnership);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
