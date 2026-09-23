@@ -55,4 +55,10 @@ public class NotificationSetting extends BaseEntity {
         this.breakEndEnabled = breakEndEnabled;
         this.seasonalBeverageEnabled = seasonalBeverageEnabled;
     }
+
+    public void updateFocusTimerEnabled(boolean enabled) {
+        this.focusStartEnabled = enabled;
+        this.focusEndEnabled = enabled;
+        this.breakEndEnabled = enabled;
+    }
 }

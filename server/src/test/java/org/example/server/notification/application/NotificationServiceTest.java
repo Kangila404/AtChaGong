@@ -76,13 +76,30 @@ class NotificationServiceTest {
 
         NotificationSettingResponse response = notificationService.updateNotificationSetting(
             USER_ID,
-            new UpdateNotificationSettingRequest(false, true, false, true)
+            new UpdateNotificationSettingRequest(null, false, true, false, null)
         );
 
         assertThat(response.focusStartEnabled()).isFalse();
         assertThat(response.focusEndEnabled()).isTrue();
         assertThat(response.breakEndEnabled()).isFalse();
         assertThat(setting.isFocusStartEnabled()).isFalse();
+    }
+
+    @Test
+    void updateNotificationSettingWithFocusTimerToggleUpdatesAllFocusNotifications() {
+        NotificationSetting setting = NotificationSetting.createDefault(USER_PK);
+        given(userRepository.findByUserId(USER_ID)).willReturn(Optional.of(activeUser()));
+        given(notificationSettingRepository.findByUserId(USER_PK)).willReturn(Optional.of(setting));
+
+        NotificationSettingResponse response = notificationService.updateNotificationSetting(
+            USER_ID,
+            new UpdateNotificationSettingRequest(false, null, null, null, null)
+        );
+
+        assertThat(response.focusTimerEnabled()).isFalse();
+        assertThat(setting.isFocusStartEnabled()).isFalse();
+        assertThat(setting.isFocusEndEnabled()).isFalse();
+        assertThat(setting.isBreakEndEnabled()).isFalse();
     }
 
     @Test

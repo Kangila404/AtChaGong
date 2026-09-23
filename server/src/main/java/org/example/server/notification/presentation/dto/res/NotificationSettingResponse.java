@@ -3,6 +3,7 @@ package org.example.server.notification.presentation.dto.res;
 import org.example.server.notification.domain.models.NotificationSetting;
 
 public record NotificationSettingResponse(
+    boolean focusTimerEnabled,
     boolean focusStartEnabled,
     boolean focusEndEnabled,
     boolean breakEndEnabled,
@@ -10,6 +11,9 @@ public record NotificationSettingResponse(
 ) {
     public static NotificationSettingResponse from(NotificationSetting notificationSetting) {
         return new NotificationSettingResponse(
+            notificationSetting.isFocusStartEnabled()
+                && notificationSetting.isFocusEndEnabled()
+                && notificationSetting.isBreakEndEnabled(),
             notificationSetting.isFocusStartEnabled(),
             notificationSetting.isFocusEndEnabled(),
             notificationSetting.isBreakEndEnabled(),
