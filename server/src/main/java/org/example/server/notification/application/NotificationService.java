@@ -63,12 +63,16 @@ public class NotificationService {
         NotificationSetting notificationSetting = notificationSettingRepository.findByUserId(user.getId())
             .orElseGet(() -> notificationSettingRepository.save(NotificationSetting.createDefault(user.getId())));
 
-        notificationSetting.update(
-            request.focusStartEnabled(),
-            request.focusEndEnabled(),
-            request.breakEndEnabled(),
-            request.seasonalBeverageEnabled()
-        );
+        if (request.focusTimerEnabled() != null) {
+            notificationSetting.updateFocusTimerEnabled(request.focusTimerEnabled());
+        } else {
+            notificationSetting.update(
+                request.focusStartEnabled(),
+                request.focusEndEnabled(),
+                request.breakEndEnabled(),
+                notificationSetting.isSeasonalBeverageEnabled()
+            );
+        }
 
         return NotificationSettingResponse.from(notificationSetting);
     }
@@ -143,11 +147,15 @@ public class NotificationService {
     }
 
     private void validateUpdateNotificationSettingRequest(UpdateNotificationSettingRequest request) {
-        if (request == null
-            || request.focusStartEnabled() == null
-            || request.focusEndEnabled() == null
-            || request.breakEndEnabled() == null
-            || request.seasonalBeverageEnabled() == null) {
+        if (request == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_SETTING);
+        }
+
+        boolean hasFocusTimerToggle = request.focusTimerEnabled() != null;
+        boolean hasLegacyFocusSettings = request.focusStartEnabled() != null
+            && request.focusEndEnabled() != null
+            && request.breakEndEnabled() != null;
+        if (!hasFocusTimerToggle && !hasLegacyFocusSettings) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_SETTING);
         }
     }
