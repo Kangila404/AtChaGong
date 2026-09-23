@@ -12,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.server.notification.application.PushNotificationSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@Primary
 @ConditionalOnProperty(name = "fcm.credentials-path")
 public class FcmPushNotificationSender implements PushNotificationSender {
     public FcmPushNotificationSender(@Value("${fcm.credentials-path}") String credentialsPath) throws IOException {
