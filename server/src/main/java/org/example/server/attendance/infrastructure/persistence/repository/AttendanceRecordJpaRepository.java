@@ -10,4 +10,5 @@ public interface AttendanceRecordJpaRepository extends JpaRepository<AttendanceR
     Optional<AttendanceRecord> findByUser_IdAndAttendanceDate(Long userId, LocalDate attendanceDate);
 
     Optional<AttendanceRecord> findFirstByUser_IdOrderByAttendanceDateDesc(Long userId);
+    void deleteByUser_Id(Long userId);
 }

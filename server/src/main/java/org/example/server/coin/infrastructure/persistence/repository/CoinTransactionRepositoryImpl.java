@@ -40,4 +40,9 @@ public class CoinTransactionRepositoryImpl implements CoinTransactionRepository 
     public Page<CoinTransaction> findByUserId(Long userId, Pageable pageable) {
         return coinTransactionJpaRepository.findByUser_Id(userId, pageable);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        coinTransactionJpaRepository.deleteByUser_Id(userId);
+    }
 }

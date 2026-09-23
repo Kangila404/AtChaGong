@@ -11,4 +11,5 @@ public interface AttendanceRecordRepository {
     Optional<AttendanceRecord> findLatestByUserId(Long userId);
 
     AttendanceRecord save(AttendanceRecord attendanceRecord);
+    void deleteByUserId(Long userId);
 }

@@ -10,4 +10,6 @@ public interface UserCoinBalanceRepository {
     Optional<UserCoinBalance> findWithLockByUserId(Long userId);
 
     UserCoinBalance save(UserCoinBalance userCoinBalance);
+
+    void deleteByUserId(Long userId);
 }

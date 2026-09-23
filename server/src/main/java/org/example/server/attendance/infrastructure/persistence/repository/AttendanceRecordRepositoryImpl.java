@@ -27,4 +27,7 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
     public AttendanceRecord save(AttendanceRecord attendanceRecord) {
         return attendanceRecordJpaRepository.save(attendanceRecord);
     }
+
+    @Override
+    public void deleteByUserId(Long userId) { attendanceRecordJpaRepository.deleteByUser_Id(userId); }
 }

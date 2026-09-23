@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DailyNotificationSettingJpaRepository extends JpaRepository<DailyNotificationSetting, Long> {
     Optional<DailyNotificationSetting> findByUserId(Long userId);
     List<DailyNotificationSetting> findAllByNotificationTimeAndEnabledTrue(LocalTime notificationTime);
+    void deleteByUserId(Long userId);
 }

@@ -10,6 +10,7 @@ public interface UserRepository {
     Optional<User> findById(Long id);
     Optional<User> findByUserId(String userId);
     User save(User user);
+    void delete(User user);
     long countByUserStatusInAndDeletedAtIsNull(Collection<UserStatus> userStatuses);
     List<User> findAllByDeletedAtIsNull();
 }
